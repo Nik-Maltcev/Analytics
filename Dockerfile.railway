@@ -1,0 +1,36 @@
+FROM python:3.11-slim
+
+# Install Node.js 18+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY backend/pyproject.toml backend/uv.lock ./backend/
+RUN cd backend && uv sync --frozen
+
+# Install Node dependencies & build frontend
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm ci
+
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
+
+# Copy backend source
+COPY backend/ ./backend/
+COPY .env* ./
+
+# Flask will serve the built frontend static files
+ENV FLASK_DEBUG=False
+ENV FLASK_HOST=0.0.0.0
+
+EXPOSE 5001
+
+CMD ["sh", "-c", "cd backend && uv run python run.py"]
