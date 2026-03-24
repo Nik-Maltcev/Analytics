@@ -24,14 +24,13 @@ from app.config import Config
 
 def main():
     """主函数"""
-    # 验证配置
+    # 验证配置（warn but don't exit — allows healthcheck to pass）
     errors = Config.validate()
     if errors:
-        print("配置错误:")
+        print("⚠️  配置警告 (服务仍会启动):")
         for err in errors:
             print(f"  - {err}")
-        print("\n请检查 .env 文件中的配置")
-        sys.exit(1)
+        print("  部分功能可能不可用，请在环境变量中补充配置\n")
     
     # 创建应用
     app = create_app()
