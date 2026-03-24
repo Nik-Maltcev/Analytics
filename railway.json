@@ -4,7 +4,7 @@
     "dockerfilePath": "Dockerfile.railway"
   },
   "deploy": {
-    "startCommand": "cd backend && uv run python run.py",
+    "startCommand": "sh -c 'cd backend && uv run python run.py'",
     "healthcheckPath": "/health",
     "restartPolicyType": "ON_FAILURE"
   }
