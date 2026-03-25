@@ -362,7 +362,7 @@ const addLog = (msg) => {
   emit('add-log', msg)
 }
 
-// 重置所有状态（用于重新启动模拟）
+// 重置所有状态（用于重新Запуск模拟）
 const resetAllState = () => {
   phase.value = 0
   runStatus.value = {}
@@ -373,10 +373,10 @@ const resetAllState = () => {
   startError.value = null
   isStarting.value = false
   isStopping.value = false
-  stopPolling()  // 停止之前可能存在的轮询
+  stopPolling()  // // Stop any existing polling
 }
 
-// 启动模拟
+// Запуск模拟
 const doStartSimulation = async () => {
   if (!props.simulationId) {
     addLog('Ошибка: отсутствует simulationId')
@@ -395,8 +395,8 @@ const doStartSimulation = async () => {
     const params = {
       simulation_id: props.simulationId,
       platform: 'parallel',
-      force: true,  // 强制重新开始
-      enable_graph_memory_update: true  // 开启动态图谱更新
+      force: true,  // // Force restart
+      enable_graph_memory_update: true  // // Enable dynamic graph update
     }
     
     if (props.maxRounds) {
@@ -421,7 +421,7 @@ const doStartSimulation = async () => {
       startStatusPolling()
       startDetailPolling()
     } else {
-      startError.value = res.error || '启动失败'
+      startError.value = res.error || 'Ошибка запуска'
       addLog(`✗ Ошибка запуска: ${res.error || 'неизвестная ошибка'}`)
       emit('update-status', 'error')
     }
@@ -526,7 +526,7 @@ const fetchRunStatus = async () => {
       }
     }
   } catch (err) {
-    console.warn('获取运行状态失败:', err)
+    console.warn('Ошибка получения статуса:', err)
   }
 }
 
@@ -584,7 +584,7 @@ const fetchRunStatusDetail = async () => {
       // 新动作会在底部追加
     }
   } catch (err) {
-    console.warn('获取详细状态失败:', err)
+    console.warn('Ошибка получения деталей:', err)
   }
 }
 

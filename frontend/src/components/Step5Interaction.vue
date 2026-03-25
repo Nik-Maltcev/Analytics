@@ -873,7 +873,7 @@ const loadReportData = async () => {
   if (!props.reportId) return
   
   try {
-    addLog(`加载报告данные: ${props.reportId}`)
+    addLog(`Загрузка отчётаданные: ${props.reportId}`)
     
     // Get report info
     const reportRes = await getReport(props.reportId)

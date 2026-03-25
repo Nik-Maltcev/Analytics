@@ -748,7 +748,7 @@ const renderGraph = () => {
       d3.select(this)
         .attr('x', mid.x)
         .attr('y', mid.y)
-        .attr('transform', '') // // Remove rotation，保持水平
+        .attr('transform', '') // // Remove rotation，// Keep horizontal
     })
     
     // 更新边标签背景

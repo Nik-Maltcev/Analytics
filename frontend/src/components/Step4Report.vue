@@ -559,7 +559,7 @@ const parseInsightForge = (text) => {
     const reqMatch = text.match(/Сценарий прогноза:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
-    // 提取统计数据 - 匹配"相关预测Факты: X条"格式
+    // 提取统计数据 - 匹配"相关预测Факты: X шт."格式
     const factMatch = text.match(/相关预测Факты:\s*(\d+)/)
     const entityMatch = text.match(/Связанные сущности:\s*(\d+)/)
     const relMatch = text.match(/Цепочки связей:\s*(\d+)/)
@@ -913,8 +913,8 @@ const parseQuickSearch = (text) => {
     const queryMatch = text.match(/Поиск查询:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
-    // 提取结果数量
-    const countMatch = text.match(/找到\s*(\d+)\s*条/)
+    // 提取Результаты数量
+    const countMatch = text.match(/找到\s*(\d+)\s* шт./)
     if (countMatch) result.count = parseInt(countMatch[1])
     
     // 提取相关Факты - 完整提取，不限制数量
@@ -1042,7 +1042,7 @@ const InsightDisplay = {
         activeTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Последние ключевые факты из временной памяти'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.facts.length} 条`)
+            h('span', { class: 'panel-count' }, `всего ${props.result.facts.length}  шт.`)
           ]),
           h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1055,21 +1055,21 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length} 条 ▼`)
+          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length}  шт. ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Ключевые сущности'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length} 个`)
           ]),
           h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 12)).map((entity, i) => 
               h('div', { class: 'entity-tag', key: i, title: entity.summary || '' }, [
                 h('span', { class: 'entity-name' }, entity.name),
                 h('span', { class: 'entity-type' }, entity.type),
-                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount}条`)
+                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount} шт.`)
               ])
             )
           ),
@@ -1083,7 +1083,7 @@ const InsightDisplay = {
         activeTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Цепочки связей'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.relations.length} 条`)
+            h('span', { class: 'panel-count' }, `всего ${props.result.relations.length}  шт.`)
           ]),
           h('div', { class: 'relations-list' },
             (expandedRelations.value ? props.result.relations : props.result.relations.slice(0, INITIAL_SHOW_COUNT)).map((rel, i) => 
@@ -1101,14 +1101,14 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? `收起 ▲` : `展开全部 ${props.result.relations.length} 条 ▼`)
+          }, expandedRelations.value ? `收起 ▲` : `展开全部 ${props.result.relations.length}  шт. ▼`)
         ]),
         
         // Sub-queries Tab
         activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '漂移查询生成分析Подвопросы'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.subQueries.length} 个`)
+            h('span', { class: 'panel-title' }, 'Drift-запрос: подвопросыПодвопросы'),
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.subQueries.length} 个`)
           ]),
           h('div', { class: 'subqueries-list' },
             props.result.subQueries.map((sq, i) => 
@@ -1121,9 +1121,9 @@ const InsightDisplay = {
         ]),
         
         // Empty state
-        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, '暂无Текущие ключевые факты'),
-        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, '暂无Ключевые сущности'),
-        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, '暂无Цепочки связей')
+        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, 'Нет данныхТекущие ключевые факты'),
+        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, 'Нет данныхКлючевые сущности'),
+        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, 'Нет данныхЦепочки связей')
       ])
     ])
   }
@@ -1198,7 +1198,7 @@ const PanoramaDisplay = {
         activeTab.value === 'active' && h('div', { class: 'facts-panel active-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Текущие активные факты'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.activeFacts.length} 条`)
+            h('span', { class: 'panel-count' }, `всего ${props.result.activeFacts.length}  шт.`)
           ]),
           props.result.activeFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedActive.value ? props.result.activeFacts : props.result.activeFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1207,18 +1207,18 @@ const PanoramaDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, '暂无Текущие активные факты'),
+          ) : h('div', { class: 'empty-state' }, 'Нет данныхТекущие активные факты'),
           props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? `收起 ▲` : `展开全部 ${props.result.activeFacts.length} 条 ▼`)
+          }, expandedActive.value ? `收起 ▲` : `展开全部 ${props.result.activeFacts.length}  шт. ▼`)
         ]),
         
         // Historical Facts Tab
         activeTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Исторические факты'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.historicalFacts.length} 条`)
+            h('span', { class: 'panel-count' }, `всего ${props.result.historicalFacts.length}  шт.`)
           ]),
           props.result.historicalFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedHistorical.value ? props.result.historicalFacts : props.result.historicalFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1239,18 +1239,18 @@ const PanoramaDisplay = {
                 ])
               ])
             )
-          ) : h('div', { class: 'empty-state' }, '暂无Исторические факты'),
+          ) : h('div', { class: 'empty-state' }, 'Нет данныхИсторические факты'),
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? `收起 ▲` : `展开全部 ${props.result.historicalFacts.length} 条 ▼`)
+          }, expandedHistorical.value ? `收起 ▲` : `展开全部 ${props.result.historicalFacts.length}  шт. ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Связанные сущности'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length} 个`)
           ]),
           props.result.entities.length > 0 ? h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 8)).map((entity, i) => 
@@ -1259,7 +1259,7 @@ const PanoramaDisplay = {
                 entity.type && h('span', { class: 'entity-type' }, entity.type)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, '暂无Связанные сущности'),
+          ) : h('div', { class: 'empty-state' }, 'Нет данныхСвязанные сущности'),
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
@@ -1327,7 +1327,7 @@ const InterviewDisplay = {
     const isPlaceholderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '（Нет ответа на этой платформе）' || t === '(Нет ответа на этой платформе)' || t === '[无回复]'
+      return t === '（Нет ответа на этой платформе）' || t === '(Нет ответа на этой платформе)' || t === '[Нет ответа]'
     }
 
     // 尝试按Вопрос编号分割回答
@@ -1642,8 +1642,8 @@ const QuickSearchDisplay = {
         // Facts (always show if no tabs, or when facts tab is active)
         ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Поиск结果'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.facts.length} 条`)
+            h('span', { class: 'panel-title' }, 'ПоискРезультаты'),
+            h('span', { class: 'panel-count' }, `всего ${props.result.facts.length}  шт.`)
           ]),
           props.result.facts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1656,14 +1656,14 @@ const QuickSearchDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length} 条 ▼`)
+          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length}  шт. ▼`)
         ]),
         
         // Edges Tab
         activeTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '相关Связи'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.edges.length} 条`)
+            h('span', { class: 'panel-title' }, 'СвязанныеСвязи'),
+            h('span', { class: 'panel-count' }, `всего ${props.result.edges.length}  шт.`)
           ]),
           h('div', { class: 'edges-list' },
             props.result.edges.map((edge, i) => 
@@ -1683,8 +1683,8 @@ const QuickSearchDisplay = {
         // Nodes Tab
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, '相关Узлы'),
-            h('span', { class: 'panel-count' }, `共 ${props.result.nodes.length} 个`)
+            h('span', { class: 'panel-title' }, 'СвязанныеУзлы'),
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.nodes.length} 个`)
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 

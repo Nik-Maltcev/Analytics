@@ -48,7 +48,7 @@
 
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
-        <!-- Step 1: 图谱构建 -->
+        <!-- Step 1: Построение графа -->
         <Step1GraphBuild 
           v-if="currentStep === 1"
           :currentPhase="currentPhase"
@@ -59,7 +59,7 @@
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
         />
-        <!-- Step 2: 环境搭建 -->
+        <!-- Step 2: Настройка среды -->
         <Step2EnvSetup
           v-else-if="currentStep === 2"
           :projectData="projectData"
@@ -90,7 +90,7 @@ const router = useRouter()
 const viewMode = ref('split') // graph | split | workbench
 
 // Step State
-const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
+const currentStep = ref(1) // 1: Построение графа, 2: Настройка среды, 3: Запуск симуляции, 4: Генерация отчёта, 5: Взаимодействие
 const stepNames = ['Построение графа', 'Настройка среды', 'Запуск симуляции', 'Генерация отчёта', 'Глубокое взаимодействие']
 
 // Data State

@@ -77,7 +77,7 @@ export const listSimulations = (projectId) => {
 }
 
 /**
- * 启动模拟
+ * Запуск模拟
  * @param {Object} data - { simulation_id, platform?, max_rounds?, enable_graph_memory_update? }
  */
 export const startSimulation = (data) => {

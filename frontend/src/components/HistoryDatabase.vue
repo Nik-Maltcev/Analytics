@@ -297,10 +297,10 @@ const getProgressClass = (simulation) => {
     // Не начато
     return 'not-started'
   } else if (current >= total) {
-    // 已完成
+    // /* completed */
     return 'completed'
   } else {
-    // 进行中
+    // /* in progress */
     return 'in-progress'
   }
 }
@@ -450,7 +450,7 @@ const loadHistory = async () => {
   }
 }
 
-// 初始化 IntersectionObserver
+// Инициализация IntersectionObserver
 const initObserver = () => {
   if (observer) {
     observer.disconnect()
@@ -543,7 +543,7 @@ onMounted(async () => {
   await nextTick()
   await loadHistory()
   
-  // 等待 DOM 渲染后初始化观察器
+  // 等待 DOM 渲染后Инициализация观察器
   setTimeout(() => {
     initObserver()
   }, 100)
@@ -745,8 +745,8 @@ onUnmounted(() => {
 }
 
 /* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* 已完成 - /* green */ */
-.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - /* orange */ */
+.card-progress.completed { color: #10B981; }    /* /* completed */ - /* green */ */
+.card-progress.in-progress { color: #F59E0B; }  /* /* in progress */ - /* orange */ */
 .card-progress.not-started { color: #9CA3AF; }  /* Не начато - /* gray */ */
 .card-status.pending { color: #9CA3AF; }
 

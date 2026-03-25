@@ -193,14 +193,14 @@
             <p class="waiting-hint">После генерации автоматически начнётся построение графа</p>
           </div>
           
-          <!-- 构建中但还没有数据 -->
+          <!-- 构建...但还没有数据 -->
           <div v-else-if="currentPhase === 1 && !graphData" class="graph-waiting">
             <div class="loading-animation">
               <div class="loading-ring"></div>
               <div class="loading-ring"></div>
               <div class="loading-ring"></div>
             </div>
-            <p class="waiting-text">Построение графа中</p>
+            <p class="waiting-text">Построение графа...</p>
             <p class="waiting-hint">Данные скоро появятся...</p>
           </div>
           
@@ -229,7 +229,7 @@
         </div>
 
         <div class="process-content">
-          <!-- 阶段1: Генерация онтологии -->
+          <!-- phase1: Генерация онтологии -->
           <div class="process-phase" :class="{ 'active': currentPhase === 0, 'completed': currentPhase > 0 }">
             <div class="phase-header">
               <span class="phase-num">01</span>
@@ -246,11 +246,11 @@
               <div class="detail-section">
                 <div class="detail-label">Описание API</div>
                 <div class="detail-content">
-                  上传文档后，LLM分析文档内容，自动生成适合舆论模拟的本体结构（Типы сущностей + связей类型）
+                  После загрузки документов LLM анализирует содержание и автоматически генерирует онтологию (типы сущностей + типы связей)
                 </div>
               </div>
               
-              <!-- Генерация онтологии进度 -->
+              <!-- Прогресс генерации онтологии -->
               <div class="detail-section" v-if="ontologyProgress && currentPhase === 0">
                 <div class="detail-label">Прогресс генерации</div>
                 <div class="ontology-progress">
@@ -274,7 +274,7 @@
               </div>
               
               <div class="detail-section" v-if="projectData?.ontology">
-                <div class="detail-label">生成的связей类型 ({{ projectData.ontology.relation_types?.length || 0 }})</div>
+                <div class="detail-label">Сгенерированные типы связей ({{ projectData.ontology.relation_types?.length || 0 }})</div>
                 <div class="relation-list">
                   <div 
                     v-for="(rel, idx) in projectData.ontology.relation_types?.slice(0, 5) || []" 
@@ -288,7 +288,7 @@
                     <span class="rel-target">{{ rel.target_type }}</span>
                   </div>
                   <div v-if="(projectData.ontology.relation_types?.length || 0) > 5" class="relation-more">
-                    +{{ projectData.ontology.relation_types.length - 5 }} 更多связей...
+                    +{{ projectData.ontology.relation_types.length - 5 }} ещё связей...
                   </div>
                 </div>
               </div>
@@ -300,7 +300,7 @@
             </div>
           </div>
 
-          <!-- 阶段2: Построение графа -->
+          <!-- phase2: Построение графа -->
           <div class="process-phase" :class="{ 'active': currentPhase === 1, 'completed': currentPhase > 1 }">
             <div class="phase-header">
               <span class="phase-num">02</span>
@@ -317,13 +317,13 @@
               <div class="detail-section">
                 <div class="detail-label">Описание API</div>
                 <div class="detail-content">
-                  基于生成的本体，将文档分块后调用 Zep API 构建知识图谱，提取实体和связей
+                  На основе сгенерированной онтологии документ разбивается на фрагменты, через Zep API строится граф знаний, извлекаются сущности и связи
                 </div>
               </div>
               
               <!-- 等待本体完成 -->
               <div class="detail-section waiting-state" v-if="currentPhase < 1">
-                <div class="waiting-hint">Ожидание генерации онтологии完成...</div>
+                <div class="waiting-hint">Ожидание генерации онтологииЗавершено...</div>
               </div>
               
               <!-- Прогресс построения -->
@@ -343,11 +343,11 @@
                 <div class="build-result">
                   <div class="result-item">
                     <span class="result-value">{{ graphData.node_count }}</span>
-                    <span class="result-label">实体узлов</span>
+                    <span class="result-label">Сущностей</span>
                   </div>
                   <div class="result-item">
                     <span class="result-value">{{ graphData.edge_count }}</span>
-                    <span class="result-label">связей边</span>
+                    <span class="result-label">Связей</span>
                   </div>
                   <div class="result-item">
                     <span class="result-value">{{ entityTypes.length }}</span>
@@ -358,7 +358,7 @@
             </div>
           </div>
 
-          <!-- 阶段3: 完成 -->
+          <!-- phase3: 完成 -->
           <div class="process-phase" :class="{ 'active': currentPhase === 2, 'completed': currentPhase > 2 }">
             <div class="phase-header">
               <span class="phase-num">03</span>
@@ -431,9 +431,9 @@ const error = ref('')
 const projectData = ref(null)
 const graphData = ref(null)
 const buildProgress = ref(null)
-const ontologyProgress = ref(null) // Генерация онтологии进度
-const currentPhase = ref(-1) // -1: 上传中, 0: Генерация онтологии中, 1: Построение графа, 2: 完成
-const selectedItem = ref(null) // 选中的узлов或边
+const ontologyProgress = ref(null) // Прогресс генерации онтологии
+const currentPhase = ref(-1) // -1: uploading, 0: Генерация онтологии..., 1: Построение графа, 2: 完成
+const selectedItem = ref(null) // selectedузловor edge
 const isFullScreen = ref(false)
 
 // DOM引用
@@ -453,8 +453,8 @@ const statusClass = computed(() => {
 const statusText = computed(() => {
   if (error.value) return 'Ошибка построения'
   if (currentPhase.value >= 2) return 'Построение завершено'
-  if (currentPhase.value === 1) return 'Построение графа中'
-  if (currentPhase.value === 0) return 'Генерация онтологии中'
+  if (currentPhase.value === 1) return 'Построение графа...'
+  if (currentPhase.value === 0) return 'Генерация онтологии...'
   return 'Инициализация'
 })
 
@@ -503,7 +503,7 @@ const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('ru-RU', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -515,7 +515,7 @@ const formatDate = (dateStr) => {
   }
 }
 
-// 选中узлов
+// 选...узлов
 const selectNode = (nodeData, color) => {
   selectedItem.value = {
     type: 'node',
@@ -525,7 +525,7 @@ const selectNode = (nodeData, color) => {
   }
 }
 
-// 选中边
+// 选...边
 const selectEdge = (edgeData) => {
   selectedItem.value = {
     type: 'edge',
@@ -550,7 +550,7 @@ const getPhaseStatusText = (phase) => {
   return 'Ожидание'
 }
 
-// 初始化 - 处理新建项目或加载已有项目
+// Инициализация - 处理新建项目或加载已有项目
 const initProject = async () => {
   const paramProjectId = route.params.projectId
   
@@ -576,7 +576,7 @@ const handleNewProject = async () => {
   
   try {
     loading.value = true
-    currentPhase.value = 0 // Генерация онтологии阶段
+    currentPhase.value = 0 // Генерация онтологииphase
     ontologyProgress.value = { message: 'Загрузка файлов и анализ документов...' }
     
     // 构建 FormData
@@ -608,11 +608,11 @@ const handleNewProject = async () => {
       // 自动开始Построение графа
       await startBuildGraph()
     } else {
-      error.value = response.error || 'Генерация онтологии失败'
+      error.value = response.error || 'Ошибка генерации онтологии'
     }
   } catch (err) {
     console.error('Handle new project error:', err)
-    error.value = 'Ошибка инициализации проекта: ' + (err.message || '未知错误')
+    error.value = 'Ошибка инициализации проекта: ' + (err.message || 'неизвестная ошибка')
   } finally {
     loading.value = false
   }
@@ -633,7 +633,7 @@ const loadProject = async () => {
         await startBuildGraph()
       }
       
-      // 继续轮询构建中的任务
+      // 继续轮询构建...的任务
       if (response.data.status === 'graph_building' && response.data.graph_build_task_id) {
         currentPhase.value = 1
         startPollingTask(response.data.graph_build_task_id)
@@ -649,7 +649,7 @@ const loadProject = async () => {
     }
   } catch (err) {
     console.error('Load project error:', err)
-    error.value = 'Ошибка загрузки проекта: ' + (err.message || '未知错误')
+    error.value = 'Ошибка загрузки проекта: ' + (err.message || 'неизвестная ошибка')
   } finally {
     loading.value = false
   }
@@ -668,7 +668,7 @@ const updatePhaseByStatus = (status) => {
       currentPhase.value = 2
       break
     case 'failed':
-      error.value = projectData.value?.error || '处理失败'
+      error.value = projectData.value?.error || 'Ошибка обработки'
       break
   }
 }
@@ -677,32 +677,32 @@ const updatePhaseByStatus = (status) => {
 const startBuildGraph = async () => {
   try {
     currentPhase.value = 1
-    // 设置初始进度
+    // 设置初始progress
     buildProgress.value = {
       progress: 0,
-      message: '正在启动Построение графа...'
+      message: 'Запуск построения графа...'
     }
     
     const response = await buildGraph({ project_id: currentProjectId.value })
     
     if (response.success) {
-      buildProgress.value.message = 'Построение графа任务已启动...'
+      buildProgress.value.message = 'Задача построения графа запущена...'
       
       // 保存 task_id 用于轮询
       const taskId = response.data.task_id
       
-      // 启动图谱数据轮询（独立于任务状态轮询）
+      // Запуск图谱数据轮询（独立于任务状态轮询）
       startGraphPolling()
       
-      // 启动任务状态轮询
+      // Запуск任务状态轮询
       startPollingTask(taskId)
     } else {
-      error.value = response.error || '启动Построение графа失败'
+      error.value = response.error || 'Ошибка запускаОшибка построения графа'
       buildProgress.value = null
     }
   } catch (err) {
     console.error('Build graph error:', err)
-    error.value = '启动Построение графа失败: ' + (err.message || '未知错误')
+    error.value = 'Ошибка запускаОшибка построения графа: ' + (err.message || 'неизвестная ошибка')
     buildProgress.value = null
   }
 }
@@ -710,7 +710,7 @@ const startBuildGraph = async () => {
 // 图谱数据轮询定时器
 let graphPollTimer = null
 
-// 启动图谱数据轮询
+// Запуск图谱数据轮询
 const startGraphPolling = () => {
   // 立即获取一次
   fetchGraphData()
@@ -788,7 +788,7 @@ const pollTaskStatus = async (taskId) => {
     if (response.success) {
       const task = response.data
       
-      // 更新进度显示
+      // 更新progress显示
       buildProgress.value = {
         progress: task.progress || 0,
         message: task.message || 'Обработка...'
@@ -797,16 +797,16 @@ const pollTaskStatus = async (taskId) => {
       console.log('Task status:', task.status, 'Progress:', task.progress)
       
       if (task.status === 'completed') {
-        console.log('✅ Построение графа完成，正在加载完整数据...')
+        console.log('✅ Построение графа завершено, загрузка данных...')
         
         stopPolling()
         stopGraphPolling()
         currentPhase.value = 2
         
-        // 更新进度显示为完成状态
+        // 更新progress显示为完成状态
         buildProgress.value = {
           progress: 100,
-          message: 'Построение завершено，正在加载图谱...'
+          message: 'Построение завершено, загрузка графа...'
         }
         
         // 重新加载项目数据获取 graph_id
@@ -816,18 +816,18 @@ const pollTaskStatus = async (taskId) => {
           
           // 最终加载完整图谱数据
           if (projectResponse.data.graph_id) {
-            console.log('📊 加载完整图谱:', projectResponse.data.graph_id)
+            console.log('📊 Loading full graph:', projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
-            console.log('✅ 图谱加载完成')
+            console.log('✅ Graph loaded')
           }
         }
         
-        // 清除进度显示
+        // 清除progress显示
         buildProgress.value = null
       } else if (task.status === 'failed') {
         stopPolling()
         stopGraphPolling()
-        error.value = 'Построение графа失败: ' + (task.error || '未知错误')
+        error.value = 'Ошибка построения графа: ' + (task.error || 'неизвестная ошибка')
         buildProgress.value = null
       }
     }
@@ -905,7 +905,7 @@ const renderGraph = () => {
       .attr('y', height / 2)
       .attr('text-anchor', 'middle')
       .attr('fill', '#999')
-      .text('等待图谱数据...')
+      .text('Ожидание данных графа...')
     return
   }
   
@@ -917,9 +917,9 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || '未命名',
+    name: n.name || 'Без имени',
     type: n.labels?.find(l => l !== 'Entity' && l !== 'Node') || 'Entity',
-    rawData: n // 保存原始数据
+    rawData: n // // Save raw data
   }))
   
   // 创建узловID集合用于过滤有效边
@@ -933,8 +933,8 @@ const renderGraph = () => {
       type: e.fact_type || e.name || 'RELATED_TO',
       rawData: {
         ...e,
-        source_name: nodeMap[e.source_node_uuid]?.name || '未知',
-        target_name: nodeMap[e.target_node_uuid]?.name || '未知'
+        source_name: nodeMap[e.source_node_uuid]?.name || 'Неизвестно',
+        target_name: nodeMap[e.target_node_uuid]?.name || 'Неизвестно'
       }
     }))
   
@@ -1709,7 +1709,7 @@ onUnmounted(() => {
   padding: 24px;
 }
 
-/* 流程阶段 */
+/* 流程phase */
 .process-phase {
   margin-bottom: 24px;
   border: 1px solid #E0E0E0;
@@ -1795,7 +1795,7 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* 阶段详情 */
+/* phase详情 */
 .phase-detail {
   padding: 16px;
 }
@@ -1852,7 +1852,7 @@ onUnmounted(() => {
   font-size: 0.75rem;
 }
 
-/* Генерация онтологии进度 */
+/* Прогресс генерации онтологии */
 .ontology-progress {
   display: flex;
   align-items: center;
@@ -1889,7 +1889,7 @@ onUnmounted(() => {
   color: #999;
 }
 
-/* 进度条 */
+/* progress条 */
 .progress-bar {
   height: 6px;
   background: #E0E0E0;
