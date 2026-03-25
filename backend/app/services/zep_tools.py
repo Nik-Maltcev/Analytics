@@ -43,7 +43,7 @@ class SearchResult:
     
     def to_text(self) -> str:
         """转换为文本格式，供LLM理解"""
-        text_parts = [f"搜索查询: {self.query}", f"找到 {self.total_count} 条相关信息"]
+        text_parts = [f"Поисковый запрос: {self.query}", f"Найдено {self.total_count} результатов"]
         
         if self.facts:
             text_parts.append("\n### 相关事实:")
@@ -170,40 +170,40 @@ class InsightForgeResult:
     def to_text(self) -> str:
         """转换为详细的文本格式，供LLM理解"""
         text_parts = [
-            f"## 未来预测深度分析",
-            f"分析问题: {self.query}",
-            f"预测场景: {self.simulation_requirement}",
-            f"\n### 预测数据统计",
-            f"- 相关预测事实: {self.total_facts}条",
-            f"- 涉及实体: {self.total_entities}个",
-            f"- 关系链: {self.total_relationships}条"
+            f"## Глубокий анализ прогноза",
+            f"Вопрос анализа: {self.query}",
+            f"Сценарий прогноза: {self.simulation_requirement}",
+            f"\n### Статистика прогноза",
+            f"- Связанные факты прогноза: {self.total_facts} шт.",
+            f"- Связанные сущности: {self.total_entities} шт.",
+            f"- Цепочки связей: {self.total_relationships} шт."
         ]
         
         # 子问题
         if self.sub_queries:
-            text_parts.append(f"\n### 分析的子问题")
+            text_parts.append(f"\n### Подвопросы анализа")
             for i, sq in enumerate(self.sub_queries, 1):
                 text_parts.append(f"{i}. {sq}")
         
         # 语义搜索结果
         if self.semantic_facts:
-            text_parts.append(f"\n### 【关键事实】(请在报告中引用这些原文)")
+            text_parts.append(f"\n### 【Ключевые факты】(цитируйте в отчёте)")
             for i, fact in enumerate(self.semantic_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
         # 实体洞察
         if self.entity_insights:
-            text_parts.append(f"\n### 【核心实体】")
+            text_parts.append(f"\n### 【Ключевые сущности】")
             for entity in self.entity_insights:
-                text_parts.append(f"- **{entity.get('name', '未知')}** ({entity.get('type', '实体')})")
+                text_parts.append(f"- **{entity.get('name', 'Неизвестно')}** ({entity.get('type', 'Сущность')})")
                 if entity.get('summary'):
                     text_parts.append(f"  摘要: \"{entity.get('summary')}\"")
                 if entity.get('related_facts'):
-                    text_parts.append(f"  相关事实: {len(entity.get('related_facts', []))}条")
+                    text_parts.append(f"  Связанные факты: {len(entity.get('related_facts', []))} шт.")
         
         # 关系链
         if self.relationship_chains:
-            text_parts.append(f"\n### 【关系链】")
+            text_parts.append(f"\n### 【Цепочки связей】")
             for chain in self.relationship_chains:
                 text_parts.append(f"- {chain}")
         
@@ -250,23 +250,23 @@ class PanoramaResult:
         """转换为文本格式（完整版本，不截断）"""
         text_parts = [
             f"## 广度搜索结果（未来全景视图）",
-            f"查询: {self.query}",
-            f"\n### 统计信息",
-            f"- 总节点数: {self.total_nodes}",
-            f"- 总边数: {self.total_edges}",
-            f"- 当前有效事实: {self.active_count}条",
-            f"- 历史/过期事实: {self.historical_count}条"
+            f"Запрос: {self.query}",
+            f"\n### Статистика",
+            f"- Всего узлов: {self.total_nodes}",
+            f"- Всего связей: {self.total_edges}",
+            f"- Текущие активные факты: {self.active_count} шт.",
+            f"- Исторические/устаревшие факты: {self.historical_count} шт."
         ]
         
         # 当前有效的事实（完整输出，不截断）
         if self.active_facts:
-            text_parts.append(f"\n### 【当前有效事实】(模拟结果原文)")
+            text_parts.append(f"\n### 【Текущие активные факты】(результаты симуляции)")
             for i, fact in enumerate(self.active_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
         # 历史/过期事实（完整输出，不截断）
         if self.historical_facts:
-            text_parts.append(f"\n### 【历史/过期事实】(演变过程记录)")
+            text_parts.append(f"\n### 【Исторические/устаревшие факты】(история изменений)")
             for i, fact in enumerate(self.historical_facts, 1):
                 text_parts.append(f"{i}. \"{fact}\"")
         
@@ -307,7 +307,7 @@ class AgentInterview:
         text += f"**Q:** {self.question}\n\n"
         text += f"**A:** {self.response}\n"
         if self.key_quotes:
-            text += "\n**关键引言:**\n"
+            text += "\n**Ключевые цитаты:**\n"
             for quote in self.key_quotes:
                 # 清理各种引号
                 clean_quote = quote.replace('\u201c', '').replace('\u201d', '').replace('"', '')
@@ -374,25 +374,25 @@ class InterviewResult:
     def to_text(self) -> str:
         """转换为详细的文本格式，供LLM理解和报告引用"""
         text_parts = [
-            "## 深度采访报告",
-            f"**采访主题:** {self.interview_topic}",
-            f"**采访人数:** {self.interviewed_count} / {self.total_agents} 位模拟Agent",
-            "\n### 采访对象选择理由",
-            self.selection_reasoning or "（自动选择）",
+            "## Отчёт глубинного интервью",
+            f"**Тема интервью:** {self.interview_topic}",
+            f"**Опрошено:** {self.interviewed_count} / {self.total_agents} агентов",
+            "\n### Причины выбора респондентов",
+            self.selection_reasoning or "(автоматический выбор)",
             "\n---",
-            "\n### 采访实录",
+            "\n### Записи интервью",
         ]
 
         if self.interviews:
             for i, interview in enumerate(self.interviews, 1):
-                text_parts.append(f"\n#### 采访 #{i}: {interview.agent_name}")
+                text_parts.append(f"\n#### Интервью #{i}: {interview.agent_name}")
                 text_parts.append(interview.to_text())
                 text_parts.append("\n---")
         else:
-            text_parts.append("（无采访记录）\n\n---")
+            text_parts.append("(нет записей интервью)\n\n---")
 
-        text_parts.append("\n### 采访摘要与核心观点")
-        text_parts.append(self.summary or "（无摘要）")
+        text_parts.append("\n### Резюме интервью и ключевые выводы")
+        text_parts.append(self.summary or "(нет резюме)")
 
         return "\n".join(text_parts)
 
@@ -1417,7 +1417,7 @@ class ZepToolsService:
                 # 始终输出双平台标记
                 twitter_text = twitter_response if twitter_response else "（该平台未获得回复）"
                 reddit_text = reddit_response if reddit_response else "（该平台未获得回复）"
-                response_text = f"【Twitter平台回答】\n{twitter_text}\n\n【Reddit平台回答】\n{reddit_text}"
+                response_text = f"【Twitter】\n{twitter_text}\n\n【Reddit】\n{reddit_text}"
 
                 # 提取关键引言（从两个平台的回答中）
                 import re

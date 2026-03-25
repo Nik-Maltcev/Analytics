@@ -552,7 +552,7 @@ const parseInsightForge = (text) => {
   
   try {
     // 提取分析Вопрос
-    const queryMatch = text.match(/分析问题:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Вопрос анализа:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取Сценарий прогноза
@@ -560,7 +560,7 @@ const parseInsightForge = (text) => {
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
     // 提取统计数据 - 匹配"相关预测事实: X шт."格式
-    const factMatch = text.match(/相关预测事实:\s*(\d+)/)
+    const factMatch = text.match(/Связанные факты прогноза:\s*(\d+)/)
     const entityMatch = text.match(/Связанные сущности:\s*(\d+)/)
     const relMatch = text.match(/Цепочки связей:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
@@ -593,7 +593,7 @@ const parseInsightForge = (text) => {
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         const summaryMatch = block.match(/摘要:\s*"?(.+?)"?(?:\n|$)/)
-        const relatedMatch = block.match(/相关事实:\s*(\d+)/)
+        const relatedMatch = block.match(/Связанные факты:\s*(\d+)/)
         return {
           name: nameMatch ? nameMatch[1].trim() : '',
           type: nameMatch ? nameMatch[2].trim() : '',
@@ -633,14 +633,14 @@ const parsePanorama = (text) => {
   
   try {
     // 提取查询
-    const queryMatch = text.match(/查询:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Запрос:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取统计数据
-    const nodesMatch = text.match(/总节点数:\s*(\d+)/)
-    const edgesMatch = text.match(/总边数:\s*(\d+)/)
-    const activeMatch = text.match(/当前有效事实:\s*(\d+)/)
-    const histMatch = text.match(/历史\/过期事实:\s*(\d+)/)
+    const nodesMatch = text.match(/Всего узлов:\s*(\d+)/)
+    const edgesMatch = text.match(/Всего связей:\s*(\d+)/)
+    const activeMatch = text.match(/Текущие активные факты:\s*(\d+)/)
+    const histMatch = text.match(/Исторические\/устаревшие факты:\s*(\d+)/)
     if (nodesMatch) result.stats.nodes = parseInt(nodesMatch[1])
     if (edgesMatch) result.stats.edges = parseInt(edgesMatch[1])
     if (activeMatch) result.stats.activeFacts = parseInt(activeMatch[1])
@@ -708,8 +708,8 @@ const parseInterview = (text) => {
       result.agentCount = `${countMatch[1]} / ${countMatch[2]}`
     }
     
-    // 提取采访对象选择理由
-    const reasonMatch = text.match(/### 采访对象选择理由\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
+    // 提取采访对象Выбор理由
+    const reasonMatch = text.match(/### 采访对象Выбор理由\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
     if (reasonMatch) {
       result.selectionReason = reasonMatch[1].trim()
     }
@@ -736,10 +736,10 @@ const parseInterview = (text) => {
           reasonStart = headerMatch[2]
         }
         
-        // 格式2: - 选择名字（index X）：理由
-        // 例如: - 选择家长_601（index 0）：作为家长群体代表...
+        // 格式2: - Выбор名字（index X）：理由
+        // 例如: - Выбор家长_601（index 0）：作为家长群体代表...
         if (!headerMatch) {
-          headerMatch = line.match(/^-\s*选择([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
+          headerMatch = line.match(/^-\s*Выбор([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
           if (headerMatch) {
             name = headerMatch[1].trim()
             reasonStart = headerMatch[2]
@@ -764,7 +764,7 @@ const parseInterview = (text) => {
           // 开始新的人
           currentName = name
           currentReason = reasonStart ? [reasonStart.trim()] : []
-        } else if (currentName && line.trim() && !line.match(/^未选|^综上|^最终选择/)) {
+        } else if (currentName && line.trim() && !line.match(/^Не выбран|^Итого|^最终Выбор/)) {
           // 理由的续行（排除结尾总结段落）
           currentReason.push(line.trim())
         }
@@ -1292,16 +1292,16 @@ const InterviewDisplay = {
     
     const activeIndex = ref(0)
     const expandedAnswers = ref(new Set())
-    // 为每个Вопрос-回答对维护独立的平台选择状态
+    // 为每个Вопрос-回答对维护独立的平台Выбор状态
     const platformTabs = reactive({}) // { 'agentIdx-qIdx': 'twitter' | 'reddit' }
     
-    // 获取某个Вопрос的当前平台选择
+    // 获取某个Вопрос的当前平台Выбор
     const getPlatformTab = (agentIdx, qIdx) => {
       const key = `${agentIdx}-${qIdx}`
       return platformTabs[key] || 'twitter'
     }
     
-    // 设置某个Вопрос的平台选择
+    // 设置某个Вопрос的平台Выбор
     const setPlatformTab = (agentIdx, qIdx, platform) => {
       const key = `${agentIdx}-${qIdx}`
       platformTabs[key] = platform
