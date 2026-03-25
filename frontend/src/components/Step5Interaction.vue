@@ -711,7 +711,7 @@ const sendToAgent = async (message) => {
     throw new Error('Сначала выберите агента')
   }
   
-  addLog(`向 ${selectedAgent.value.username} 发送: ${message.substring(0, 50)}...`)
+  addLog(`Отправка ${selectedAgent.value.username}: ${message.substring(0, 50)}...`)
   
   // Build prompt with chat history
   let prompt = message
@@ -803,7 +803,7 @@ const submitSurvey = async () => {
   if (selectedAgents.value.size === 0 || !surveyQuestion.value.trim()) return
   
   isSurveying.value = true
-  addLog(`Отправить опрос给 ${selectedAgents.value.size} 个对象...`)
+  addLog(`Отправка опроса ${selectedAgents.value.size} агентам...`)
   
   try {
     const interviews = Array.from(selectedAgents.value).map(idx => ({
@@ -904,7 +904,7 @@ const loadAgentLogs = async () => {
         }
       })
       
-      addLog('报告данные加载完成')
+      addLog('Данные отчёта загружены')
     }
   } catch (err) {
     addLog(`Ошибка загрузки логов отчёта: ${err.message}`)
@@ -918,7 +918,7 @@ const loadProfiles = async () => {
     const res = await getSimulationProfilesRealtime(props.simulationId, 'reddit')
     if (res.success && res.data) {
       profiles.value = res.data.profiles || []
-      addLog(`加载了 ${profiles.value.length} 个模拟个体`)
+      addLog(`Загружено ${profiles.value.length} агентов`)
     }
   } catch (err) {
     addLog(`Ошибка загрузки агентов: ${err.message}`)

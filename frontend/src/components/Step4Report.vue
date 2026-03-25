@@ -552,15 +552,15 @@ const parseInsightForge = (text) => {
   
   try {
     // 提取分析Вопрос
-    const queryMatch = text.match(/分析Вопрос:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/分析问题:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取Сценарий прогноза
     const reqMatch = text.match(/Сценарий прогноза:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
-    // 提取统计数据 - 匹配"相关预测Факты: X шт."格式
-    const factMatch = text.match(/相关预测Факты:\s*(\d+)/)
+    // 提取统计数据 - 匹配"相关预测事实: X шт."格式
+    const factMatch = text.match(/相关预测事实:\s*(\d+)/)
     const entityMatch = text.match(/Связанные сущности:\s*(\d+)/)
     const relMatch = text.match(/Цепочки связей:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
@@ -568,14 +568,14 @@ const parseInsightForge = (text) => {
     if (relMatch) result.stats.relationships = parseInt(relMatch[1])
     
     // 提取Подвопросы - 完整提取，不限制数量
-    const subQSection = text.match(/### 分析的Подвопросы\n([\s\S]*?)(?=\n###|$)/)
+    const subQSection = text.match(/### 分析的子问题\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
-    // 提取关键Факты - 完整提取，不限制数量
-    const factsSection = text.match(/### 【关键Факты】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    // 提取关键事实 - 完整提取，不限制数量
+    const factsSection = text.match(/### 【关键事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => {
@@ -585,7 +585,7 @@ const parseInsightForge = (text) => {
     }
     
     // 提取Ключевые сущности - 完整提取，包含摘要和相关Факты数
-    const entitySection = text.match(/### 【Ключевые сущности】\n([\s\S]*?)(?=\n###|$)/)
+    const entitySection = text.match(/### 【核心实体】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const entityText = entitySection[1]
       // 按 "- **" 分割实体块
@@ -593,7 +593,7 @@ const parseInsightForge = (text) => {
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         const summaryMatch = block.match(/摘要:\s*"?(.+?)"?(?:\n|$)/)
-        const relatedMatch = block.match(/相关Факты:\s*(\d+)/)
+        const relatedMatch = block.match(/相关事实:\s*(\d+)/)
         return {
           name: nameMatch ? nameMatch[1].trim() : '',
           type: nameMatch ? nameMatch[2].trim() : '',
@@ -603,7 +603,7 @@ const parseInsightForge = (text) => {
       }).filter(e => e.name)
     }
     
-    // 提取Цепочки связей - 完整提取，不限制数量
+    // 提取关系链 - 完整提取，不限制数量
     const relSection = text.match(/### 【Цепочки связей】\n([\s\S]*?)(?=\n###|$)/)
     if (relSection) {
       const lines = relSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -637,17 +637,17 @@ const parsePanorama = (text) => {
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取统计数据
-    const nodesMatch = text.match(/总Узлы数:\s*(\d+)/)
+    const nodesMatch = text.match(/总节点数:\s*(\d+)/)
     const edgesMatch = text.match(/总边数:\s*(\d+)/)
-    const activeMatch = text.match(/当前有效Факты:\s*(\d+)/)
-    const histMatch = text.match(/历史\/过期Факты:\s*(\d+)/)
+    const activeMatch = text.match(/当前有效事实:\s*(\d+)/)
+    const histMatch = text.match(/历史\/过期事实:\s*(\d+)/)
     if (nodesMatch) result.stats.nodes = parseInt(nodesMatch[1])
     if (edgesMatch) result.stats.edges = parseInt(edgesMatch[1])
     if (activeMatch) result.stats.activeFacts = parseInt(activeMatch[1])
     if (histMatch) result.stats.historicalFacts = parseInt(histMatch[1])
     
-    // 提取当前有效Факты - 完整提取，不限制数量
-    const activeSection = text.match(/### 【当前有效Факты】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    // 提取当前有效事实 - 完整提取，不限制数量
+    const activeSection = text.match(/### 【当前有效事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (activeSection) {
       const lines = activeSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.activeFacts = lines.map(l => {
@@ -657,8 +657,8 @@ const parsePanorama = (text) => {
       }).filter(Boolean)
     }
     
-    // 提取历史/过期Факты - 完整提取，不限制数量
-    const histSection = text.match(/### 【历史\/过期Факты】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    // 提取历史/过期事实 - 完整提取，不限制数量
+    const histSection = text.match(/### 【历史\/过期事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (histSection) {
       const lines = histSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.historicalFacts = lines.map(l => {
@@ -667,7 +667,7 @@ const parsePanorama = (text) => {
       }).filter(Boolean)
     }
     
-    // 提取Связанные сущности - 完整提取，不限制数量
+    // 提取涉及实体 - 完整提取，不限制数量
     const entitySection = text.match(/### 【Связанные сущности】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const lines = entitySection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -708,8 +708,8 @@ const parseInterview = (text) => {
       result.agentCount = `${countMatch[1]} / ${countMatch[2]}`
     }
     
-    // 提取采访对象Причина выбора
-    const reasonMatch = text.match(/### 采访对象Причина выбора\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
+    // 提取采访对象选择理由
+    const reasonMatch = text.match(/### 采访对象选择理由\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
     if (reasonMatch) {
       result.selectionReason = reasonMatch[1].trim()
     }
@@ -910,7 +910,7 @@ const parseQuickSearch = (text) => {
   
   try {
     // 提取Поиск查询
-    const queryMatch = text.match(/Поиск查询:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/搜索查询:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // 提取Результаты数量
@@ -918,7 +918,7 @@ const parseQuickSearch = (text) => {
     if (countMatch) result.count = parseInt(countMatch[1])
     
     // 提取相关Факты - 完整提取，不限制数量
-    const factsSection = text.match(/### 相关Факты:\n([\s\S]*)$/)
+    const factsSection = text.match(/### 相关事实:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
@@ -938,7 +938,7 @@ const parseQuickSearch = (text) => {
     }
     
     // 尝试提取Узлы信息（如果有）
-    const nodesSection = text.match(/### 相关Узлы:\n([\s\S]*?)(?=\n###|$)/)
+    const nodesSection = text.match(/### 相关节点:\n([\s\S]*?)(?=\n###|$)/)
     if (nodesSection) {
       const lines = nodesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.nodes = lines.map(l => {
@@ -1055,14 +1055,14 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length}  шт. ▼`)
+          }, expandedFacts.value ? `Свернуть ▲` : `Развернуть ${props.result.facts.length}  шт. ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Ключевые сущности'),
-            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length}  шт.`)
           ]),
           h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 12)).map((entity, i) => 
@@ -1076,7 +1076,7 @@ const InsightDisplay = {
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `收起 ▲` : `展开全部 ${props.result.entities.length} 个 ▼`)
+          }, expandedEntities.value ? `Свернуть ▲` : `Развернуть ${props.result.entities.length}  шт. ▼`)
         ]),
         
         // Relations Tab
@@ -1101,14 +1101,14 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? `收起 ▲` : `展开全部 ${props.result.relations.length}  шт. ▼`)
+          }, expandedRelations.value ? `Свернуть ▲` : `Развернуть ${props.result.relations.length}  шт. ▼`)
         ]),
         
         // Sub-queries Tab
         activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Drift-запрос: подвопросыПодвопросы'),
-            h('span', { class: 'panel-count' }, ` всего  ${props.result.subQueries.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.subQueries.length}  шт.`)
           ]),
           h('div', { class: 'subqueries-list' },
             props.result.subQueries.map((sq, i) => 
@@ -1211,7 +1211,7 @@ const PanoramaDisplay = {
           props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? `收起 ▲` : `展开全部 ${props.result.activeFacts.length}  шт. ▼`)
+          }, expandedActive.value ? `Свернуть ▲` : `Развернуть ${props.result.activeFacts.length}  шт. ▼`)
         ]),
         
         // Historical Facts Tab
@@ -1243,14 +1243,14 @@ const PanoramaDisplay = {
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? `收起 ▲` : `展开全部 ${props.result.historicalFacts.length}  шт. ▼`)
+          }, expandedHistorical.value ? `Свернуть ▲` : `Развернуть ${props.result.historicalFacts.length}  шт. ▼`)
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'Связанные сущности'),
-            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.entities.length}  шт.`)
           ]),
           props.result.entities.length > 0 ? h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 8)).map((entity, i) => 
@@ -1263,7 +1263,7 @@ const PanoramaDisplay = {
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? `收起 ▲` : `展开全部 ${props.result.entities.length} 个 ▼`)
+          }, expandedEntities.value ? `Свернуть ▲` : `Развернуть ${props.result.entities.length}  шт. ▼`)
         ])
       ])
     ])
@@ -1656,7 +1656,7 @@ const QuickSearchDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length}  шт. ▼`)
+          }, expandedFacts.value ? `Свернуть ▲` : `Развернуть ${props.result.facts.length}  шт. ▼`)
         ]),
         
         // Edges Tab
@@ -1684,7 +1684,7 @@ const QuickSearchDisplay = {
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, 'СвязанныеУзлы'),
-            h('span', { class: 'panel-count' }, ` всего  ${props.result.nodes.length} 个`)
+            h('span', { class: 'panel-count' }, ` всего  ${props.result.nodes.length}  шт.`)
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 
@@ -2456,7 +2456,7 @@ watch(() => props.reportId, (newId) => {
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  color: #9CA3AF; /* 深灰色，不随状态变化 */
+  color: #9CA3AF; /* dark gray, static */
   font-weight: 500;
 }
 
