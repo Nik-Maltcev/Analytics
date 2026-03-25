@@ -104,7 +104,7 @@
                 </div>
               </div>
               
-              <!-- 边详情 -->
+              <!-- Edge details -->
               <div v-else class="detail-content">
                 <!-- связей展示 -->
                 <div class="edge-relation">
@@ -164,7 +164,7 @@
             </div>
           </div>
           
-          <!-- 加载状态 -->
+          <!-- Loading state -->
           <div v-else-if="graphLoading" class="graph-loading">
             <div class="loading-animation">
               <div class="loading-ring"></div>

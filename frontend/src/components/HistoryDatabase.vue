@@ -99,7 +99,7 @@
       </div>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
       <span class="loading-text">Загрузка...</span>
@@ -139,7 +139,7 @@
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>暂НетСвязанные файлы</div>
+                <div class="modal-empty" v-else>НетНетСвязанные файлы</div>
               </div>
             </div>
 
@@ -207,8 +207,8 @@ const historyContainer = ref(null)
 const selectedProject = ref(null)  // 当前选中的项目（用于弹窗）
 let observer = null
 let isAnimating = false  // 动画锁，防止闪烁
-let expandDebounceTimer = null  // 防抖定时器
-let pendingState = null  // 记录待执行的目标状态
+let expandDebounceTimer = null  // // Debounce timer
+let pendingState = null  // // Pending target state
 
 // 卡片布局配置 - 调整为更宽的比例
 const CARDS_PER_ROW = 4
@@ -288,7 +288,7 @@ const getCardStyle = (index) => {
   }
 }
 
-// 根据轮数进度获取样式类
+// 根据 р.数进度获取样式类
 const getProgressClass = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
@@ -349,12 +349,12 @@ const formatSimulationId = (simulationId) => {
   return `SIM_${prefix.toUpperCase()}`
 }
 
-// 格式化轮数显示（当前轮/总轮数）
+// 格式化 р.数显示（当前 р./总 р.数）
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
   if (total === 0) return 'Не начато'
-  return `${current}/${total} 轮`
+  return `${current}/${total}  р.`
 }
 
 // 获取文件类型（用于样式）
@@ -382,7 +382,7 @@ const getFileTypeLabel = (filename) => {
 
 // 截断文件名（保留扩展名）
 const truncateFilename = (filename, maxLength) => {
-  if (!filename) return '未知文件'
+  if (!filename) return 'Неизвестный файл'
   if (filename.length <= maxLength) return filename
   
   const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
@@ -464,7 +464,7 @@ const initObserver = () => {
         // 更新待执行的目标状态（Нет论是否在动画中都要记录最新的目标状态）
         pendingState = shouldExpand
         
-        // 清除之前的防抖定时器（新的滚动意图会覆盖旧的）
+        // 清除之前的// Debounce timer（新的滚动意图会覆盖旧的）
         if (expandDebounceTimer) {
           clearTimeout(expandDebounceTimer)
           expandDebounceTimer = null
@@ -560,7 +560,7 @@ onUnmounted(() => {
     observer.disconnect()
     observer = null
   }
-  // 清理防抖定时器
+  // 清理// Debounce timer
   if (expandDebounceTimer) {
     clearTimeout(expandDebounceTimer)
     expandDebounceTimer = null
@@ -721,16 +721,16 @@ onUnmounted(() => {
 }
 
 /* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* Построение графа - 蓝色 */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* Настройка среды - 橙色 */
-.status-icon:nth-child(3).available { color: #10B981; } /* Аналитический отчёт - 绿色 */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* Построение графа - /* blue */ */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* Настройка среды - /* orange */ */
+.status-icon:nth-child(3).available { color: #10B981; } /* Аналитический отчёт - /* green */ */
 
 .status-icon.unavailable {
   color: #D1D5DB;
   opacity: 0.5;
 }
 
-/* 轮数进度显示 */
+/*  р.数进度显示 */
 .card-progress {
   display: flex;
   align-items: center;
@@ -745,9 +745,9 @@ onUnmounted(() => {
 }
 
 /* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* 已完成 - 绿色 */
-.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - 橙色 */
-.card-progress.not-started { color: #9CA3AF; }  /* Не начато - 灰色 */
+.card-progress.completed { color: #10B981; }    /* 已完成 - /* green */ */
+.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - /* orange */ */
+.card-progress.not-started { color: #9CA3AF; }  /* Не начато - /* gray */ */
 .card-status.pending { color: #9CA3AF; }
 
 /* 文件列表区域 */
@@ -932,7 +932,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-/* 底部轮数进度显示 */
+/* 底部 р.数进度显示 */
 .card-footer .card-progress {
   display: flex;
   align-items: center;

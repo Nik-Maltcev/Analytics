@@ -733,7 +733,7 @@ const sendToAgent = async (message) => {
   })
   
   if (res.success && res.data) {
-    // 正确的数据路径: res.data.result.results 是一个对象字典
+    // 正确的данные路径: res.data.result.results 是一个对象字典
     // 格式: {"twitter_0": {...}, "reddit_0": {...}} 或单平台 {"reddit_0": {...}}
     const resultData = res.data.result || res.data
     const resultsDict = resultData.results || resultData
@@ -761,9 +761,9 @@ const sendToAgent = async (message) => {
         content: responseContent,
         timestamp: new Date().toISOString()
       })
-      addLog(`${selectedAgent.value.username} 已回复`)
+      addLog(`${selectedAgent.value.username} ответил`)
     } else {
-      throw new Error('Нет ответа数据')
+      throw new Error('Нет ответаданные')
     }
   } else {
     throw new Error(res.error || 'Ошибка запроса')
@@ -817,7 +817,7 @@ const submitSurvey = async () => {
     })
     
     if (res.success && res.data) {
-      // 正确的数据路径: res.data.result.results 是一个对象字典
+      // 正确的данные路径: res.data.result.results 是一个对象字典
       // 格式: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
       const resultData = res.data.result || res.data
       const resultsDict = resultData.results || resultData
@@ -857,12 +857,12 @@ const submitSurvey = async () => {
       }
       
       surveyResults.value = surveyResultsList
-      addLog(`收到 ${surveyResults.value.length} ответов`)
+      addLog(`Получено ${surveyResults.value.length} ответов`)
     } else {
       throw new Error(res.error || 'Ошибка запроса')
     }
   } catch (err) {
-    addLog(`问卷Ошибка отправки: ${err.message}`)
+    addLog(`ОпросОшибка отправки: ${err.message}`)
   } finally {
     isSurveying.value = false
   }
@@ -873,7 +873,7 @@ const loadReportData = async () => {
   if (!props.reportId) return
   
   try {
-    addLog(`加载报告数据: ${props.reportId}`)
+    addLog(`加载报告данные: ${props.reportId}`)
     
     // Get report info
     const reportRes = await getReport(props.reportId)
@@ -882,7 +882,7 @@ const loadReportData = async () => {
       await loadAgentLogs()
     }
   } catch (err) {
-    addLog(`加载报告失败: ${err.message}`)
+    addLog(`Ошибка загрузки отчёта: ${err.message}`)
   }
 }
 
@@ -904,10 +904,10 @@ const loadAgentLogs = async () => {
         }
       })
       
-      addLog('报告数据加载完成')
+      addLog('报告данные加载完成')
     }
   } catch (err) {
-    addLog(`加载报告日志失败: ${err.message}`)
+    addLog(`Ошибка загрузки логов отчёта: ${err.message}`)
   }
 }
 
@@ -921,7 +921,7 @@ const loadProfiles = async () => {
       addLog(`加载了 ${profiles.value.length} 个模拟个体`)
     }
   } catch (err) {
-    addLog(`加载模拟个体失败: ${err.message}`)
+    addLog(`Ошибка загрузки агентов: ${err.message}`)
   }
 }
 
@@ -935,7 +935,7 @@ const handleClickOutside = (e) => {
 
 // Lifecycle
 onMounted(() => {
-  addLog('Step5 深度互动初始化')
+  addLog('Step5 Инициализация интерактивного режима')
   loadReportData()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)
@@ -2533,7 +2533,7 @@ watch(() => props.simulationId, (newId) => {
   margin: 6px 0;
 }
 
-/* 聊天/问卷区域的引用样式 */
+/* 聊天/Опрос区域的引用样式 */
 .chat-messages :deep(.md-quote),
 .result-answer :deep(.md-quote) {
   margin: 12px 0;

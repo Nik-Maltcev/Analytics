@@ -190,7 +190,7 @@ const checkAndStopRunningSimulation = async () => {
       try {
         const closeRes = await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
-          timeout: 10  // 10秒超时
+          timeout: 10  // 10сек. таймаут
         })
         
         if (closeRes.success) {
@@ -215,7 +215,7 @@ const checkAndStopRunningSimulation = async () => {
     }
   } catch (err) {
     // 检查环境状态失败不影响后续流程
-    console.warn('检查模拟状态失败:', err)
+    console.warn('Ошибка проверки статуса симуляции:', err)
   }
 }
 
