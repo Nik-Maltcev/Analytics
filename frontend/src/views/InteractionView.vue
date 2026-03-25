@@ -109,10 +109,10 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return 'Error'
-  if (currentStatus.value === 'completed') return 'Completed'
-  if (currentStatus.value === 'processing') return 'Processing'
-  return 'Ready'
+  if (currentStatus.value === 'error') return 'Ошибка'
+  if (currentStatus.value === 'completed') return 'Завершено'
+  if (currentStatus.value === 'processing') return 'Обработка'
+  return 'Готово'
 })
 
 // --- Helpers ---

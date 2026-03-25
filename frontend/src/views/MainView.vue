@@ -130,11 +130,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  if (error.value) return 'Ошибка'
+  if (currentPhase.value >= 2) return 'Готово'
+  if (currentPhase.value === 1) return 'Построение графа'
+  if (currentPhase.value === 0) return 'Генерация онтологии'
+  return 'Инициализация'
 })
 
 // --- Helpers ---
@@ -178,7 +178,7 @@ const handleGoBack = () => {
 // --- Data Logic ---
 
 const initProject = async () => {
-  addLog('Project view initialized.')
+  addLog('Инициализация проекта.')
   if (currentProjectId.value === 'new') {
     await handleNewProject()
   } else {
@@ -190,15 +190,15 @@ const handleNewProject = async () => {
   const pending = getPendingUpload()
   if (!pending.isPending || pending.files.length === 0) {
     error.value = 'No pending files found.'
-    addLog('Error: No pending files found for new project.')
+    addLog('Ошибка: нет файлов для загрузки.')
     return
   }
   
   try {
     loading.value = true
     currentPhase.value = 0
-    ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog('Starting ontology generation: Uploading files...')
+    ontologyProgress.value = { message: 'Загрузка и анализ документов...' }
+    addLog('Генерация онтологии: загрузка файлов...')
     
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))
@@ -271,8 +271,8 @@ const updatePhaseByStatus = (status) => {
 const startBuildGraph = async () => {
   try {
     currentPhase.value = 1
-    buildProgress.value = { progress: 0, message: 'Starting build...' }
-    addLog('Initiating graph build...')
+    buildProgress.value = { progress: 0, message: 'Запуск построения...' }
+    addLog('Запуск построения графа...')
     
     const res = await buildGraph({ project_id: currentProjectId.value })
     if (res.success) {
@@ -290,7 +290,7 @@ const startBuildGraph = async () => {
 }
 
 const startGraphPolling = () => {
-  addLog('Started polling for graph data...')
+  addLog('Начат опрос данных графа...')
   fetchGraphData()
   graphPollTimer = setInterval(fetchGraphData, 10000)
 }
@@ -332,7 +332,7 @@ const pollTaskStatus = async (taskId) => {
       buildProgress.value = { progress: task.progress || 0, message: task.message }
       
       if (task.status === 'completed') {
-        addLog('Graph build task completed.')
+        addLog('Построение графа завершено.')
         stopPolling()
         stopGraphPolling() // Stop polling, do final load
         currentPhase.value = 2
@@ -361,7 +361,7 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded successfully.')
+      addLog('Данные графа загружены.')
     } else {
       addLog(`Failed to load graph data: ${res.error}`)
     }
@@ -374,7 +374,7 @@ const loadGraph = async (graphId) => {
 
 const refreshGraph = () => {
   if (projectData.value?.graph_id) {
-    addLog('Manual graph refresh triggered.')
+    addLog('Обновление графа.')
     loadGraph(projectData.value.graph_id)
   }
 }
@@ -390,7 +390,7 @@ const stopGraphPolling = () => {
   if (graphPollTimer) {
     clearInterval(graphPollTimer)
     graphPollTimer = null
-    addLog('Graph polling stopped.')
+    addLog('Опрос графа остановлен.')
   }
 }
 

@@ -615,7 +615,8 @@
       </div>
     </Transition>
 
-    <!-- Bottom Info / Logs -->
+    <!-- Bottom Info / Logs (hidden) -->
+    <!--
     <div class="system-logs">
       <div class="log-header">
         <span class="log-title">SYSTEM DASHBOARD</span>
@@ -628,6 +629,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>
 

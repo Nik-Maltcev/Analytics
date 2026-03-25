@@ -269,7 +269,8 @@
       </div>
     </div>
 
-    <!-- Bottom Info / Logs -->
+    <!-- Bottom Info / Logs (hidden) -->
+    <!--
     <div class="system-logs">
       <div class="log-header">
         <span class="log-title">SIMULATION MONITOR</span>
@@ -282,6 +283,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>
 
