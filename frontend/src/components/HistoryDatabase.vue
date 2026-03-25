@@ -720,10 +720,10 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* Построение графа - /* blue */ */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* Настройка среды - /* orange */ */
-.status-icon:nth-child(3).available { color: #10B981; } /* Аналитический отчёт - /* green */ */
+/* Цвета функций */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* Graph - blue */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* Env - orange */
+.status-icon:nth-child(3).available { color: #10B981; } /* Report - green */
 
 .status-icon.unavailable {
   color: #D1D5DB;
@@ -744,10 +744,10 @@ onUnmounted(() => {
   font-size: 0.5rem;
 }
 
-/* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* /* completed */ - /* green */ */
-.card-progress.in-progress { color: #F59E0B; }  /* /* in progress */ - /* orange */ */
-.card-progress.not-started { color: #9CA3AF; }  /* Не начато - /* gray */ */
+/* Progress status colors */
+.card-progress.completed { color: #10B981; }    /* completed - green */
+.card-progress.in-progress { color: #F59E0B; }  /* in progress - orange */
+.card-progress.not-started { color: #9CA3AF; }  /* not started - gray */
 .card-status.pending { color: #9CA3AF; }
 
 /* 文件列表区域 */
