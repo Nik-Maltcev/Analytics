@@ -374,7 +374,8 @@
       </div>
     </div>
 
-    <!-- Bottom Console Logs -->
+    <!-- Bottom Console Logs (hidden) -->
+    <!--
     <div class="console-logs">
       <div class="log-header">
         <span class="log-title">CONSOLE OUTPUT</span>
@@ -386,6 +387,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </template>
 

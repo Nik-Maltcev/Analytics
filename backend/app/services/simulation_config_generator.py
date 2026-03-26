@@ -1,7 +1,7 @@
 """
 模拟配置智能生成器
 使用LLM根据模拟需求、文档内容、图谱信息自动生成细致的模拟参数
-实现全程自动化，无需人工设置参数
+实现全程自动化，Нет需人工设置参数
 
 采用分步生成策略，避免一次性生成过长内容导致失败：
 1. 生成时间配置
@@ -26,7 +26,7 @@ logger = get_logger('mirofish.simulation_config')
 
 # 中国作息时间配置（北京时间）
 CHINA_TIMEZONE_CONFIG = {
-    # 深夜时段（几乎无人活动）
+    # 深夜时段（几乎Нет人活动）
     "dead_hours": [0, 1, 2, 3, 4, 5],
     # 早间时段（逐渐醒来）
     "morning_hours": [6, 7, 8],
@@ -38,7 +38,7 @@ CHINA_TIMEZONE_CONFIG = {
     "night_hours": [23],
     # 活跃度系数
     "activity_multipliers": {
-        "dead": 0.05,      # 凌晨几乎无人
+        "dead": 0.05,      # 凌晨几乎Нет人
         "morning": 0.4,    # 早间逐渐活跃
         "work": 0.7,       # 工作时段中等
         "peak": 1.5,       # 晚间高峰
@@ -96,7 +96,7 @@ class TimeSimulationConfig:
     peak_hours: List[int] = field(default_factory=lambda: [19, 20, 21, 22])
     peak_activity_multiplier: float = 1.5
     
-    # 低谷时段（凌晨0-5点，几乎无人活动）
+    # 低谷时段（凌晨0-5点，几乎Нет人活动）
     off_peak_hours: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5])
     off_peak_activity_multiplier: float = 0.05  # 凌晨活跃度极低
     
@@ -539,16 +539,16 @@ class SimulationConfigGenerator:
         # 计算最大允许值（80%的agent数）
         max_agents_allowed = max(1, int(num_entities * 0.9))
         
-        prompt = f"""基于以下模拟需求，生成时间模拟配置。
+        prompt = f"""На основе следующих условий моделирования сгенерируйте конфигурацию времени.
 
 {context_truncated}
 
 ## 任务
-请生成时间配置JSON。
+Сгенерируйте JSON конфигурации времени.
 
 ### 基本原则（仅供参考，需根据具体事件和参与群体灵活调整）：
 - 用户群体为中国人，需符合北京时间作息习惯
-- 凌晨0-5点几乎无人活动（活跃度系数0.05）
+- 凌晨0-5点几乎Нет人活动（活跃度系数0.05）
 - 早上6-8点逐渐活跃（活跃度系数0.4）
 - 工作时间9-18点中等活跃（活跃度系数0.7）
 - 晚间19-22点是高峰期（活跃度系数1.5）
@@ -584,7 +584,7 @@ class SimulationConfigGenerator:
 - work_hours (int数组): 工作时段
 - reasoning (string): 简要说明为什么这样配置"""
 
-        system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合中国人作息习惯。"
+        system_prompt = "Вы эксперт по симуляции соцсетей. Возвращайте чистый JSON. Используйте русский язык для текстовых полей."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -633,7 +633,7 @@ class SimulationConfigGenerator:
             agents_per_hour_max=agents_per_hour_max,
             peak_hours=result.get("peak_hours", [19, 20, 21, 22]),
             off_peak_hours=result.get("off_peak_hours", [0, 1, 2, 3, 4, 5]),
-            off_peak_activity_multiplier=0.05,  # 凌晨几乎无人
+            off_peak_activity_multiplier=0.05,  # 凌晨几乎Нет人
             morning_hours=result.get("morning_hours", [6, 7, 8]),
             morning_activity_multiplier=0.4,
             work_hours=result.get("work_hours", list(range(9, 19))),
@@ -671,9 +671,9 @@ class SimulationConfigGenerator:
         # 使用配置的上下文截断长度
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
         
-        prompt = f"""基于以下模拟需求，生成事件配置。
+        prompt = f"""На основе следующих условий моделирования сгенерируйте конфигурацию событий.
 
-模拟需求: {simulation_requirement}
+Условия моделирования: {simulation_requirement}
 
 {context_truncated}
 
@@ -681,9 +681,9 @@ class SimulationConfigGenerator:
 {type_info}
 
 ## 任务
-请生成事件配置JSON：
-- 提取热点话题关键词
-- 描述舆论发展方向
+Сгенерируйте JSON конфигурации событий:
+- Извлеките ключевые слова горячих тем
+- Опишите направление развития общественного мнения
 - 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
 
 **重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
@@ -700,7 +700,7 @@ class SimulationConfigGenerator:
     "reasoning": "<简要说明>"
 }}"""
 
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
+        system_prompt = "Вы эксперт по анализу общественного мнения. Возвращайте чистый JSON. poster_type должен точно совпадать с доступными типами сущностей. Используйте русский язык для текстовых полей."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -827,9 +827,9 @@ class SimulationConfigGenerator:
                 "summary": e.summary[:summary_len] if e.summary else ""
             })
         
-        prompt = f"""基于以下信息，为每个实体生成社交媒体活动配置。
+        prompt = f"""На основе следующей информации сгенерируйте конфигурацию активности в соцсетях для каждой сущности.
 
-模拟需求: {simulation_requirement}
+Условия моделирования: {simulation_requirement}
 
 ## 实体列表
 ```json
@@ -837,9 +837,9 @@ class SimulationConfigGenerator:
 ```
 
 ## 任务
-为每个实体生成活动配置，注意：
-- **时间符合中国人作息**：凌晨0-5点几乎不活动，晚间19-22点最活跃
-- **官方机构**（University/GovernmentAgency）：活跃度低(0.1-0.3)，工作时间(9-17)活动，响应慢(60-240分钟)，影响力高(2.5-3.0)
+Сгенерируйте конфигурацию активности для каждой сущности:
+- Учитывайте типичный распорядок дня: минимальная активность 0-5, пик 19-22
+- Официальные организации (University/GovernmentAgency): низкая активность (0.1-0.3), рабочие часы (9-17), медленный отклик (60-240 мин), высокое влияние (2.5-3.0)
 - **媒体**（MediaOutlet）：活跃度中(0.4-0.6)，全天活动(8-23)，响应快(5-30分钟)，影响力高(2.0-2.5)
 - **个人**（Student/Person/Alumni）：活跃度高(0.6-0.9)，主要晚间活动(18-23)，响应快(1-15分钟)，影响力低(0.8-1.2)
 - **公众人物/专家**：活跃度中(0.4-0.6)，影响力中高(1.5-2.0)
@@ -863,7 +863,7 @@ class SimulationConfigGenerator:
     ]
 }}"""
 
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
+        system_prompt = "Вы эксперт по анализу поведения в соцсетях. Возвращайте чистый JSON. Используйте русский язык для текстовых полей."
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)

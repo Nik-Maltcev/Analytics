@@ -105,7 +105,7 @@ class ReportLogger:
                 "simulation_id": simulation_id,
                 "graph_id": graph_id,
                 "simulation_requirement": simulation_requirement,
-                "message": "报告生成任务开始"
+                "message": "Начало генерации отчёта"
             }
         )
     
@@ -114,7 +114,7 @@ class ReportLogger:
         self.log(
             action="planning_start",
             stage="planning",
-            details={"message": "开始规划报告大纲"}
+            details={"message": "Начало планирования структуры отчёта"}
         )
     
     def log_planning_context(self, context: Dict[str, Any]):
@@ -123,7 +123,7 @@ class ReportLogger:
             action="planning_context",
             stage="planning",
             details={
-                "message": "获取模拟上下文信息",
+                "message": "Получение контекста симуляции",
                 "context": context
             }
         )
@@ -134,7 +134,7 @@ class ReportLogger:
             action="planning_complete",
             stage="planning",
             details={
-                "message": "大纲规划完成",
+                "message": "Планирование структуры завершено",
                 "outline": outline_dict
             }
         )
@@ -146,7 +146,7 @@ class ReportLogger:
             stage="generating",
             section_title=section_title,
             section_index=section_index,
-            details={"message": f"开始生成章节: {section_title}"}
+            details={"message": f"Начало генерации раздела: {section_title}"}
         )
     
     def log_react_thought(self, section_title: str, section_index: int, iteration: int, thought: str):
@@ -159,7 +159,7 @@ class ReportLogger:
             details={
                 "iteration": iteration,
                 "thought": thought,
-                "message": f"ReACT 第{iteration}轮思考"
+                "message": f"ReACT итерация {iteration}"
             }
         )
     
@@ -181,7 +181,7 @@ class ReportLogger:
                 "iteration": iteration,
                 "tool_name": tool_name,
                 "parameters": parameters,
-                "message": f"调用工具: {tool_name}"
+                "message": f"Вызов инструмента: {tool_name}"
             }
         )
     
@@ -204,7 +204,7 @@ class ReportLogger:
                 "tool_name": tool_name,
                 "result": result,  # 完整结果，不截断
                 "result_length": len(result),
-                "message": f"工具 {tool_name} 返回结果"
+                "message": f"Инструмент {tool_name} вернул результат"
             }
         )
     
@@ -229,7 +229,7 @@ class ReportLogger:
                 "response_length": len(response),
                 "has_tool_calls": has_tool_calls,
                 "has_final_answer": has_final_answer,
-                "message": f"LLM 响应 (工具调用: {has_tool_calls}, 最终答案: {has_final_answer})"
+                "message": f"LLM ответ (инструменты: {has_tool_calls}, финальный ответ: {has_final_answer})"
             }
         )
     
@@ -250,7 +250,7 @@ class ReportLogger:
                 "content": content,  # 完整内容，不截断
                 "content_length": len(content),
                 "tool_calls_count": tool_calls_count,
-                "message": f"章节 {section_title} 内容生成完成"
+                "message": f"Раздел {section_title} — контент сгенерирован"
             }
         )
     
@@ -273,7 +273,7 @@ class ReportLogger:
             details={
                 "content": full_content,
                 "content_length": len(full_content),
-                "message": f"章节 {section_title} 生成完成"
+                "message": f"Раздел {section_title} завершён"
             }
         )
     
@@ -285,7 +285,7 @@ class ReportLogger:
             details={
                 "total_sections": total_sections,
                 "total_time_seconds": round(total_time_seconds, 2),
-                "message": "报告生成完成"
+                "message": "Генерация отчёта завершена"
             }
         )
     
@@ -298,7 +298,7 @@ class ReportLogger:
             section_index=None,
             details={
                 "error": error_message,
-                "message": f"发生错误: {error_message}"
+                "message": f"Ошибка: {error_message}"
             }
         )
 
@@ -1148,7 +1148,7 @@ class ReportAgent:
         Returns:
             ReportOutline: 报告大纲
         """
-        logger.info("开始规划报告大纲...")
+        logger.info("Планирование структуры отчёта...")
         
         if progress_callback:
             progress_callback("planning", 0, "正在分析模拟需求...")
@@ -1199,13 +1199,13 @@ class ReportAgent:
             )
             
             if progress_callback:
-                progress_callback("planning", 100, "大纲规划完成")
+                progress_callback("planning", 100, "Планирование структуры завершено")
             
-            logger.info(f"大纲规划完成: {len(sections)} 个章节")
+            logger.info(f"Структура готова: {len(sections)} разделов")
             return outline
             
         except Exception as e:
-            logger.error(f"大纲规划失败: {str(e)}")
+            logger.error(f"Ошибка планирования: {str(e)}")
             # 返回默认大纲（3个章节，作为fallback）
             return ReportOutline(
                 title="未来预测报告",
@@ -1311,8 +1311,8 @@ class ReportAgent:
                 logger.warning(f"章节 {section.title} 第 {iteration + 1} 次迭代: LLM 返回 None")
                 # 如果还有迭代次数，添加消息并重试
                 if iteration < max_iterations - 1:
-                    messages.append({"role": "assistant", "content": "（响应为空）"})
-                    messages.append({"role": "user", "content": "请继续生成内容。"})
+                    messages.append({"role": "assistant", "content": "(пустой ответ)"})
+                    messages.append({"role": "user", "content": "Продолжайте генерацию контента."})
                     continue
                 # 最后一次迭代也返回 None，跳出循环进入强制收尾
                 break
@@ -1390,7 +1390,7 @@ class ReportAgent:
 
                 # 正常结束
                 final_answer = response.split("Final Answer:")[-1].strip()
-                logger.info(f"章节 {section.title} 生成完成（工具调用: {tool_calls_count}次）")
+                logger.info(f"Раздел {section.title} завершён (вызовов инструментов: {tool_calls_count})")
 
                 if self.report_logger:
                     self.report_logger.log_section_content(
@@ -1500,7 +1500,7 @@ class ReportAgent:
             return final_answer
         
         # 达到最大迭代次数，强制生成内容
-        logger.warning(f"章节 {section.title} 达到最大迭代次数，强制生成")
+        logger.warning(f"Раздел {section.title}: достигнут лимит итераций, принудительная генерация")
         messages.append({"role": "user", "content": REACT_FORCE_FINAL_MSG})
         
         response = self.llm.chat(
@@ -1512,7 +1512,7 @@ class ReportAgent:
         # 检查强制收尾时 LLM 返回是否为 None
         if response is None:
             logger.error(f"章节 {section.title} 强制收尾时 LLM 返回 None，使用默认错误提示")
-            final_answer = f"（本章节生成失败：LLM 返回空响应，请稍后重试）"
+            final_answer = f"(Ошибка генерации раздела: LLM вернул пустой ответ, попробуйте позже)"
         elif "Final Answer:" in response:
             final_answer = response.split("Final Answer:")[-1].strip()
         else:
@@ -1598,7 +1598,7 @@ class ReportAgent:
             # 阶段1: 规划大纲
             report.status = ReportStatus.PLANNING
             ReportManager.update_progress(
-                report_id, "planning", 5, "开始规划报告大纲...",
+                report_id, "planning", 5, "Планирование структуры отчёта...",
                 completed_sections=[]
             )
             
@@ -1606,7 +1606,7 @@ class ReportAgent:
             self.report_logger.log_planning_start()
             
             if progress_callback:
-                progress_callback("planning", 0, "开始规划报告大纲...")
+                progress_callback("planning", 0, "Планирование структуры отчёта...")
             
             outline = self.plan_outline(
                 progress_callback=lambda stage, prog, msg: 
@@ -1620,7 +1620,7 @@ class ReportAgent:
             # 保存大纲到文件
             ReportManager.save_outline(report_id, outline)
             ReportManager.update_progress(
-                report_id, "planning", 15, f"大纲规划完成，共{len(outline.sections)}个章节",
+                report_id, "planning", 15, f"Структура готова: {len(outline.sections)} разделов",
                 completed_sections=[]
             )
             ReportManager.save_report(report)
@@ -1721,14 +1721,14 @@ class ReportAgent:
             # 保存最终报告
             ReportManager.save_report(report)
             ReportManager.update_progress(
-                report_id, "completed", 100, "报告生成完成",
+                report_id, "completed", 100, "Генерация отчёта завершена",
                 completed_sections=completed_section_titles
             )
             
             if progress_callback:
-                progress_callback("completed", 100, "报告生成完成")
+                progress_callback("completed", 100, "Генерация отчёта завершена")
             
-            logger.info(f"报告生成完成: {report_id}")
+            logger.info(f"Отчёт сгенерирован: {report_id}")
             
             # 关闭控制台日志记录器
             if self.console_logger:
@@ -1738,7 +1738,7 @@ class ReportAgent:
             return report
             
         except Exception as e:
-            logger.error(f"报告生成失败: {str(e)}")
+            logger.error(f"Ошибка генерации отчёта: {str(e)}")
             report.status = ReportStatus.FAILED
             report.error = str(e)
             
@@ -1750,7 +1750,7 @@ class ReportAgent:
             try:
                 ReportManager.save_report(report)
                 ReportManager.update_progress(
-                    report_id, "failed", -1, f"报告生成失败: {str(e)}",
+                    report_id, "failed", -1, f"Ошибка генерации отчёта: {str(e)}",
                     completed_sections=completed_section_titles
                 )
             except Exception:
