@@ -99,5 +99,26 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            # Try to repair truncated JSON by closing open brackets
+            repaired = cleaned_response
+            open_braces = repaired.count('{') - repaired.count('}')
+            open_brackets = repaired.count('[') - repaired.count(']')
+            
+            # Trim to last complete item (remove trailing partial content)
+            # Find last complete closing brace/bracket
+            for _ in range(max(open_braces, open_brackets) + 5):
+                # Remove trailing incomplete key-value pairs
+                repaired = re.sub(r',\s*"[^"]*"?\s*:?\s*"?[^"{}[\]]*$', '', repaired)
+                repaired = re.sub(r',\s*\{[^}]*$', '', repaired)
+                repaired = re.sub(r',\s*$', '', repaired)
+            
+            # Close remaining open brackets/braces
+            open_braces = repaired.count('{') - repaired.count('}')
+            open_brackets = repaired.count('[') - repaired.count(']')
+            repaired += ']' * max(0, open_brackets) + '}' * max(0, open_braces)
+            
+            try:
+                return json.loads(repaired)
+            except json.JSONDecodeError:
+                raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response[:500]}")
 
