@@ -302,7 +302,7 @@ def generate_ontology_from_prompt():
 
         logger.info("Generating synthetic scenario document via LLM...")
         response = llm.client.chat.completions.create(
-            model=llm.model_name,
+            model=llm.model,
             messages=[
                 {"role": "system", "content": "Вы аналитик-эксперт. Пишите подробные аналитические документы на русском языке."},
                 {"role": "user", "content": scenario_prompt}
