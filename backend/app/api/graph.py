@@ -301,8 +301,7 @@ def generate_ontology_from_prompt():
 Пишите как аналитический отчёт с конкретными деталями. Придумывайте реалистичные имена, названия организаций и детали если они не указаны в запросе."""
 
         logger.info("Generating synthetic scenario document via LLM...")
-        response = llm.client.chat.completions.create(
-            model=llm.model,
+        synthetic_text = llm.chat(
             messages=[
                 {"role": "system", "content": "Вы аналитик-эксперт. Пишите подробные аналитические документы на русском языке."},
                 {"role": "user", "content": scenario_prompt}
@@ -310,8 +309,6 @@ def generate_ontology_from_prompt():
             temperature=0.7,
             max_tokens=4000
         )
-        
-        synthetic_text = response.choices[0].message.content.strip()
         logger.info(f"Synthetic document generated: {len(synthetic_text)} chars")
         
         # Step 2: Create project and save synthetic text as document
@@ -325,13 +322,25 @@ def generate_ontology_from_prompt():
         project.total_text_length = len(synthetic_text)
         ProjectManager.save_extracted_text(project.project_id, synthetic_text)
         
-        # Step 3: Generate ontology using standard pipeline
+        # Step 3: Generate ontology using standard pipeline (with retry)
         logger.info("Generating ontology from synthetic document...")
         generator = OntologyGenerator()
-        ontology = generator.generate(
-            document_texts=[synthetic_text],
-            simulation_requirement=simulation_requirement
-        )
+        
+        last_error = None
+        for attempt in range(3):
+            try:
+                ontology = generator.generate(
+                    document_texts=[synthetic_text],
+                    simulation_requirement=simulation_requirement
+                )
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Ontology generation attempt {attempt + 1} failed: {e}")
+                import time
+                time.sleep(2)
+        else:
+            raise last_error
         
         entity_count = len(ontology.get("entity_types", []))
         edge_count = len(ontology.get("edge_types", []))
