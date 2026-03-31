@@ -254,6 +254,119 @@ def generate_ontology():
         }), 500
 
 
+# ============== Prompt-only mode: generate scenario from prompt ==============
+
+@graph_bp.route('/ontology/generate-from-prompt', methods=['POST'])
+def generate_ontology_from_prompt():
+    """
+    Prompt-only mode: generate ontology without file upload.
+    LLM generates a synthetic scenario document from the prompt,
+    then the standard pipeline runs.
+    
+    Request (JSON):
+        {
+            "simulation_requirement": "...",
+            "project_name": "..." (optional)
+        }
+    """
+    try:
+        logger.info("=== Prompt-only mode: generating scenario from prompt ===")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "JSON body required"}), 400
+        
+        simulation_requirement = data.get('simulation_requirement', '').strip()
+        project_name = data.get('project_name', 'Prompt Project')
+        
+        if not simulation_requirement:
+            return jsonify({"success": False, "error": "simulation_requirement is required"}), 400
+        
+        # Step 1: Use LLM to generate a synthetic scenario document
+        from ..utils.llm_client import LLMClient
+        llm = LLMClient()
+        
+        scenario_prompt = f"""На основе следующего запроса пользователя напишите подробный аналитический документ (2000-3000 слов) на русском языке, который описывает ситуацию, участников, их роли, мотивации и взаимосвязи.
+
+Запрос пользователя: {simulation_requirement}
+
+Документ должен содержать:
+1. Описание ситуации/события и его контекст
+2. Перечисление всех ключевых участников (конкретные люди, организации, компании, СМИ, группы)
+3. Роли и мотивации каждого участника
+4. Взаимосвязи между участниками (кто с кем сотрудничает, конкурирует, подчиняется)
+5. Возможные сценарии развития событий
+6. Потенциальные точки конфликта и консенсуса
+
+Пишите как аналитический отчёт с конкретными деталями. Придумывайте реалистичные имена, названия организаций и детали если они не указаны в запросе."""
+
+        logger.info("Generating synthetic scenario document via LLM...")
+        response = llm.client.chat.completions.create(
+            model=llm.model_name,
+            messages=[
+                {"role": "system", "content": "Вы аналитик-эксперт. Пишите подробные аналитические документы на русском языке."},
+                {"role": "user", "content": scenario_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=4000
+        )
+        
+        synthetic_text = response.choices[0].message.content.strip()
+        logger.info(f"Synthetic document generated: {len(synthetic_text)} chars")
+        
+        # Step 2: Create project and save synthetic text as document
+        project = ProjectManager.create_project(name=project_name)
+        project.simulation_requirement = simulation_requirement
+        project.files.append({
+            "filename": "generated_scenario.md",
+            "size": len(synthetic_text.encode('utf-8'))
+        })
+        
+        project.total_text_length = len(synthetic_text)
+        ProjectManager.save_extracted_text(project.project_id, synthetic_text)
+        
+        # Step 3: Generate ontology using standard pipeline
+        logger.info("Generating ontology from synthetic document...")
+        generator = OntologyGenerator()
+        ontology = generator.generate(
+            document_texts=[synthetic_text],
+            simulation_requirement=simulation_requirement
+        )
+        
+        entity_count = len(ontology.get("entity_types", []))
+        edge_count = len(ontology.get("edge_types", []))
+        logger.info(f"Ontology generated: {entity_count} entity types, {edge_count} edge types")
+        
+        project.ontology = {
+            "entity_types": ontology.get("entity_types", []),
+            "edge_types": ontology.get("edge_types", [])
+        }
+        project.analysis_summary = ontology.get("analysis_summary", "")
+        project.status = ProjectStatus.ONTOLOGY_GENERATED
+        ProjectManager.save_project(project)
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": project.project_id,
+                "project_name": project.name,
+                "ontology": project.ontology,
+                "analysis_summary": project.analysis_summary,
+                "files": project.files,
+                "total_text_length": project.total_text_length,
+                "prompt_only": True
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Prompt-only generation failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 接口2：构建图谱 ==============
 
 @graph_bp.route('/build', methods=['POST'])

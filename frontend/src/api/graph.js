@@ -19,6 +19,19 @@ export function generateOntology(formData) {
 }
 
 /**
+ * Prompt-only mode: generate ontology from prompt without files
+ */
+export function generateOntologyFromPrompt(data) {
+  return requestWithRetry(() =>
+    service({
+      url: '/api/graph/ontology/generate-from-prompt',
+      method: 'post',
+      data
+    })
+  )
+}
+
+/**
  * 构建图谱
  * @param {Object} data - 包含project_id, graph_name等
  * @returns {Promise}

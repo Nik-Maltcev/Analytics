@@ -125,10 +125,15 @@
             <div class="console-section">
               <div class="console-header">
                 <span class="console-label">01 / Исходные данные</span>
-                <span class="console-meta">Форматы: PDF, MD, TXT</span>
+                <span class="console-meta">
+                  <label class="mode-toggle">
+                    <input type="checkbox" v-model="promptOnlyMode" :disabled="loading">
+                    <span class="toggle-label">{{ promptOnlyMode ? 'Только промпт' : 'С документами' }}</span>
+                  </label>
+                </span>
               </div>
               
-              <div 
+              <div v-if="!promptOnlyMode"
                 class="upload-zone"
                 :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
                 @dragover.prevent="handleDragOver"
@@ -149,7 +154,7 @@
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
                   <div class="upload-title">Перетащите файлы сюда</div>
-                  <div class="upload-hint">или нажмите для выбора</div>
+                  <div class="upload-hint">или нажмите для выбора • PDF, MD, TXT</div>
                 </div>
                 
                 <div v-else class="file-list">
@@ -159,6 +164,12 @@
                     <button @click.stop="removeFile(index)" class="remove-btn">×</button>
                   </div>
                 </div>
+              </div>
+              
+              <div v-else class="prompt-only-hint">
+                <div class="hint-icon">⚡</div>
+                <div class="hint-text">LLM сгенерирует сценарий из вашего промпта</div>
+                <div class="hint-sub">Документы не нужны — AI создаст контекст автоматически</div>
               </div>
             </div>
 
@@ -231,8 +242,14 @@ const fileInput = ref(null)
 
 // Computed: can submit
 const canSubmit = computed(() => {
+  if (promptOnlyMode.value) {
+    return formData.value.simulationRequirement.trim() !== ''
+  }
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
+
+// Prompt-only mode toggle
+const promptOnlyMode = ref(false)
 
 // Trigger file select
 const triggerFileInput = () => {
@@ -294,7 +311,11 @@ const startSimulation = () => {
   
   // Store pending upload data
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
+    setPendingUpload(
+      promptOnlyMode.value ? [] : files.value,
+      formData.value.simulationRequirement,
+      promptOnlyMode.value
+    )
     
     // Redirect to Process page (new project)
     router.push({
@@ -706,6 +727,52 @@ const startSimulation = () => {
 .upload-zone:hover {
   background: #F0F0F0;
   border-color: #999;
+}
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mode-toggle input {
+  accent-color: #FF4500;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Prompt-only hint */
+.prompt-only-hint {
+  border: 1px dashed #FF4500;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #FFF8F5;
+  gap: 8px;
+}
+
+.hint-icon {
+  font-size: 2rem;
+}
+
+.hint-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.hint-sub {
+  font-size: 0.75rem;
+  color: #999;
 }
 
 .upload-placeholder {

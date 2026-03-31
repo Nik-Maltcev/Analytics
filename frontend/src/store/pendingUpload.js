@@ -1,26 +1,29 @@
 /**
- * 临时存储待上传的文件和需求
- * 用于首页点击Запуск引擎后立即跳转，在Process页面再进行API调用
+ * Temporary store for pending upload data.
+ * Used when navigating from Home to Process page.
  */
 import { reactive } from 'vue'
 
 const state = reactive({
   files: [],
   simulationRequirement: '',
-  isPending: false
+  isPending: false,
+  promptOnly: false
 })
 
-export function setPendingUpload(files, requirement) {
+export function setPendingUpload(files, requirement, promptOnly = false) {
   state.files = files
   state.simulationRequirement = requirement
   state.isPending = true
+  state.promptOnly = promptOnly
 }
 
 export function getPendingUpload() {
   return {
     files: state.files,
     simulationRequirement: state.simulationRequirement,
-    isPending: state.isPending
+    isPending: state.isPending,
+    promptOnly: state.promptOnly
   }
 }
 
@@ -28,6 +31,7 @@ export function clearPendingUpload() {
   state.files = []
   state.simulationRequirement = ''
   state.isPending = false
+  state.promptOnly = false
 }
 
 export default state

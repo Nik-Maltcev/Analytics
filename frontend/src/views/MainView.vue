@@ -80,7 +80,7 @@ import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
-import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
+import { generateOntology, generateOntologyFromPrompt, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
@@ -188,23 +188,48 @@ const initProject = async () => {
 
 const handleNewProject = async () => {
   const pending = getPendingUpload()
-  if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No pending files found.'
-    addLog('Ошибка: нет файлов для загрузки.')
-    return
+  
+  // Prompt-only mode: no files needed
+  if (pending.promptOnly) {
+    if (!pending.isPending || !pending.simulationRequirement) {
+      error.value = 'Не указан промпт симуляции.'
+      return
+    }
+  } else {
+    if (!pending.isPending || pending.files.length === 0) {
+      error.value = 'Нет файлов для загрузки.'
+      addLog('Ошибка: нет файлов для загрузки.')
+      return
+    }
   }
   
   try {
     loading.value = true
     currentPhase.value = 0
-    ontologyProgress.value = { message: 'Загрузка и анализ документов...' }
-    addLog('Генерация онтологии: загрузка файлов...')
     
-    const formData = new FormData()
-    pending.files.forEach(f => formData.append('files', f))
-    formData.append('simulation_requirement', pending.simulationRequirement)
+    let res
     
-    const res = await generateOntology(formData)
+    if (pending.promptOnly) {
+      // Prompt-only mode
+      ontologyProgress.value = { message: 'Генерация сценария из промпта...' }
+      addLog('Режим «только промпт»: генерация сценария...')
+      
+      res = await generateOntologyFromPrompt({
+        simulation_requirement: pending.simulationRequirement,
+        project_name: 'Prompt Project'
+      })
+    } else {
+      // Standard mode with files
+      ontologyProgress.value = { message: 'Загрузка и анализ документов...' }
+      addLog('Генерация онтологии: загрузка файлов...')
+      
+      const formData = new FormData()
+      pending.files.forEach(f => formData.append('files', f))
+      formData.append('simulation_requirement', pending.simulationRequirement)
+      
+      res = await generateOntology(formData)
+    }
+    
     if (res.success) {
       clearPendingUpload()
       currentProjectId.value = res.data.project_id
@@ -212,15 +237,15 @@ const handleNewProject = async () => {
       
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
-      addLog(`Ontology generated successfully for project ${res.data.project_id}`)
+      addLog(`Онтология сгенерирована: ${res.data.project_id}`)
       await startBuildGraph()
     } else {
-      error.value = res.error || 'Ontology generation failed'
-      addLog(`Error generating ontology: ${error.value}`)
+      error.value = res.error || 'Ошибка генерации онтологии'
+      addLog(`Ошибка: ${error.value}`)
     }
   } catch (err) {
     error.value = err.message
-    addLog(`Exception in handleNewProject: ${err.message}`)
+    addLog(`Исключение: ${err.message}`)
   } finally {
     loading.value = false
   }
