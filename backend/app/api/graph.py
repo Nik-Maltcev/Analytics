@@ -376,6 +376,164 @@ def generate_ontology_from_prompt():
         }), 500
 
 
+# ============== Pikabu integration: accept parsed data ==============
+
+@graph_bp.route('/ontology/generate-from-pikabu', methods=['POST'])
+def generate_ontology_from_pikabu():
+    """
+    Принимает спарсенные данные из PIKABU Topic Analyzer,
+    форматирует в текст и запускает стандартный пайплайн MiroFish.
+
+    Request (JSON):
+        {
+            "posts": [
+                {
+                    "title": "...",
+                    "body": "...",
+                    "published_at": "2025-01-15T12:00:00",
+                    "rating": 150,
+                    "comments_count": 42,
+                    "url": "https://pikabu.ru/...",
+                    "comments": [
+                        {"body": "...", "published_at": "...", "rating": 5}
+                    ]
+                }
+            ],
+            "topic_name": "Название темы",
+            "source": "pikabu",                    // pikabu | habr | vcru | pikabu,habr | ...
+            "simulation_requirement": "...",        // обязательно
+            "project_name": "..."                   // опционально
+        }
+
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "project_id": "proj_xxxx",
+                "ontology": {...},
+                "analysis_summary": "...",
+                "total_text_length": 12345,
+                "source": "pikabu",
+                "posts_count": 50,
+                "comments_count": 320
+            }
+        }
+    """
+    try:
+        logger.info("=== Pikabu integration: generating ontology from parsed data ===")
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "JSON body required"}), 400
+
+        posts = data.get('posts', [])
+        topic_name = data.get('topic_name', '')
+        source = data.get('source', 'pikabu')
+        simulation_requirement = data.get('simulation_requirement', '').strip()
+        project_name = data.get('project_name', f'Pikabu: {topic_name}' if topic_name else 'Pikabu Import')
+
+        if not simulation_requirement:
+            return jsonify({
+                "success": False,
+                "error": "simulation_requirement is required"
+            }), 400
+
+        if not posts:
+            return jsonify({
+                "success": False,
+                "error": "posts array is empty — nothing to analyze"
+            }), 400
+
+        # Форматируем посты в текст
+        from ..services.pikabu_formatter import PikabuFormatter
+
+        stats = PikabuFormatter.estimate_text_size(posts)
+        logger.info(
+            f"Pikabu data: {stats['posts']} posts, {stats['comments']} comments, "
+            f"~{stats['estimated_chars']} chars estimated"
+        )
+
+        document_text = PikabuFormatter.format_posts_to_text(
+            posts=posts,
+            topic_name=topic_name,
+            source=source,
+            simulation_requirement=simulation_requirement,
+        )
+
+        if not document_text.strip():
+            return jsonify({
+                "success": False,
+                "error": "Formatted text is empty — posts may have no content"
+            }), 400
+
+        # Создаём проект
+        project = ProjectManager.create_project(name=project_name)
+        project.simulation_requirement = simulation_requirement
+        project.files.append({
+            "filename": f"pikabu_import_{source}.md",
+            "size": len(document_text.encode('utf-8'))
+        })
+
+        project.total_text_length = len(document_text)
+        ProjectManager.save_extracted_text(project.project_id, document_text)
+        logger.info(f"Project created: {project.project_id}, text: {len(document_text)} chars")
+
+        # Генерируем онтологию
+        logger.info("Generating ontology from pikabu data...")
+        generator = OntologyGenerator()
+
+        last_error = None
+        for attempt in range(3):
+            try:
+                ontology = generator.generate(
+                    document_texts=[document_text],
+                    simulation_requirement=simulation_requirement,
+                )
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Ontology generation attempt {attempt + 1} failed: {e}")
+                import time
+                time.sleep(2)
+        else:
+            raise last_error
+
+        entity_count = len(ontology.get("entity_types", []))
+        edge_count = len(ontology.get("edge_types", []))
+        logger.info(f"Ontology generated: {entity_count} entity types, {edge_count} edge types")
+
+        project.ontology = {
+            "entity_types": ontology.get("entity_types", []),
+            "edge_types": ontology.get("edge_types", []),
+        }
+        project.analysis_summary = ontology.get("analysis_summary", "")
+        project.status = ProjectStatus.ONTOLOGY_GENERATED
+        ProjectManager.save_project(project)
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": project.project_id,
+                "project_name": project.name,
+                "ontology": project.ontology,
+                "analysis_summary": project.analysis_summary,
+                "files": project.files,
+                "total_text_length": project.total_text_length,
+                "source": source,
+                "posts_count": stats["posts"],
+                "comments_count": stats["comments"],
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Pikabu integration failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 接口2：构建图谱 ==============
 
 @graph_bp.route('/build', methods=['POST'])
