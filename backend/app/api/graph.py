@@ -652,7 +652,63 @@ def generate_ontology_from_market_research():
 
         api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
 
-        # Загружаем данные по каждой теме из Topic Analyzer
+        # ═══ Получаем инфо о темах для определения source ═══
+        topics_info = {}
+        try:
+            topics_resp = requests.get(f"{api_url}/api/topics", params={"source": "all"}, timeout=15)
+            if topics_resp.status_code == 200:
+                for t in topics_resp.json().get("topics", []):
+                    topics_info[t["id"]] = t
+        except Exception as e:
+            logger.warning(f"Failed to fetch topics info: {e}")
+
+        # ═══ Автопарсинг: запускаем сбор данных в Topic Analyzer ═══
+        import time as _time
+
+        for topic_id in topic_ids:
+            t_info = topics_info.get(topic_id, {})
+            t_source = t_info.get("source", "pikabu")
+            logger.info(f"Auto-parsing: topic {topic_id} ({t_info.get('name', '?')}) [{t_source}]...")
+
+            try:
+                parse_resp = requests.post(
+                    f"{api_url}/api/analysis/start",
+                    json={"topic_id": topic_id, "days": 30, "source": t_source},
+                    timeout=15,
+                )
+                if parse_resp.status_code == 200:
+                    parse_data = parse_resp.json()
+                    task_id = parse_data.get("task_id")
+                    if task_id:
+                        logger.info(f"  Parse started: task_id={task_id}")
+                        for _ in range(60):
+                            _time.sleep(5)
+                            try:
+                                status_resp = requests.get(
+                                    f"{api_url}/api/analysis/status/{task_id}",
+                                    timeout=10,
+                                )
+                                if status_resp.status_code == 200:
+                                    sdata = status_resp.json()
+                                    status = sdata.get("status", "")
+                                    progress = sdata.get("progress_percent", 0)
+                                    stage = sdata.get("current_stage", "")
+                                    logger.info(f"  [{t_source}] {status} {progress}% — {stage}")
+                                    if status in ("completed", "failed"):
+                                        break
+                                else:
+                                    break
+                            except Exception:
+                                break
+                elif parse_resp.status_code == 409:
+                    logger.info(f"  Parse already running for topic {topic_id}")
+                    _time.sleep(10)
+                else:
+                    logger.warning(f"  Parse trigger returned {parse_resp.status_code}")
+            except Exception as e:
+                logger.warning(f"  Auto-parse failed for topic {topic_id}: {e}")
+
+        # ═══ Загружаем данные по каждой теме из Topic Analyzer ═══
         topics_data = []
         topics_loaded = []
 
