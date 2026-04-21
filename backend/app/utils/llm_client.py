@@ -31,6 +31,12 @@ class LLMClient:
             api_key=self.api_key,
             base_url=self.base_url
         )
+        
+        # Некоторые модели (Kimi K2.5) требуют фиксированный temperature=1
+        self._force_temperature = None
+        model_lower = (self.model or "").lower()
+        if "kimi-k2" in model_lower or "kimi_k2" in model_lower:
+            self._force_temperature = 1.0
     
     def chat(
         self,
@@ -54,7 +60,7 @@ class LLMClient:
         kwargs = {
             "model": self.model,
             "messages": messages,
-            "temperature": temperature,
+            "temperature": self._force_temperature if self._force_temperature is not None else temperature,
             "max_tokens": max_tokens,
         }
         
