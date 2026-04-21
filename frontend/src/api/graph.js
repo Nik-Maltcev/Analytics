@@ -81,3 +81,33 @@ export function getProject(projectId) {
     method: 'get'
   })
 }
+
+/**
+ * Получить список тем из Topic Analyzer (для маркетинговых исследований)
+ * @param {String} source - Фильтр: pikabu | habr | vcru | all
+ * @param {String} search - Поиск по имени
+ * @returns {Promise}
+ */
+export function getExternalTopics(source = 'all', search = '') {
+  return service({
+    url: '/api/graph/topics/external',
+    method: 'get',
+    params: { source, search }
+  })
+}
+
+/**
+ * Запустить маркетинговое исследование (мультиселект тем)
+ * @param {Object} data - { topic_ids: [1,5,12], brief: "...", project_name: "..." }
+ * @returns {Promise}
+ */
+export function generateMarketResearch(data) {
+  return requestWithRetry(() =>
+    service({
+      url: '/api/graph/ontology/generate-from-market-research',
+      method: 'post',
+      data,
+      timeout: 600000 // 10 минут — загрузка данных + генерация онтологии
+    })
+  )
+}

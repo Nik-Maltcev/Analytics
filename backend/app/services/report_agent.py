@@ -863,6 +863,109 @@ CHAT_OBSERVATION_SUFFIX = "\n\nОтветьте кратко."
 
 
 # ═══════════════════════════════════════════════════════════════
+# Маркетинговое исследование — промпты
+# ═══════════════════════════════════════════════════════════════
+
+MARKET_PLAN_SYSTEM_PROMPT = """\
+ВАЖНО: Весь ответ ДОЛЖЕН быть на РУССКОМ языке.
+
+Вы эксперт по маркетинговым исследованиям. Вы генерируете структуру отчёта
+для B2B-клиента на основе данных из трёх источников: Pikabu, Habr, VC.ru.
+
+【Ваша задача】
+Создать план маркетингового исследования из РОВНО 5 глав.
+Структура ФИКСИРОВАНА — не меняйте порядок и названия глав.
+
+Выведите JSON:
+{
+    "title": "Заголовок исследования (на русском)",
+    "summary": "Краткое описание исследования (1-2 предложения)",
+    "sections": [
+        {"title": "Ёмкость рынка и динамика", "description": "Оценка объёма рынка, ключевые игроки, тренды роста"},
+        {"title": "Конкурентная среда: SWOT-анализ", "description": "SWOT для каждого ключевого конкурента, сравнительная таблица"},
+        {"title": "Целевая аудитория: сегментация и барьеры", "description": "Сегменты ЦА по болям, барьеры входа, ценовые ожидания"},
+        {"title": "PEST-анализ", "description": "Political, Economic, Social, Technological факторы"},
+        {"title": "Executive Summary и рекомендации", "description": "Ключевые находки, выводы, рекомендации для клиента"}
+    ]
+}
+
+【Правила】
+- Ровно 5 sections, порядок как выше
+- title и summary адаптируйте под конкретный бриф клиента
+- Executive Summary ПОСЛЕДНИЙ (генерируется после остальных 4 глав)
+- Никаких прогнозов — только аналитика на основе данных
+"""
+
+MARKET_SECTION_SYSTEM_PROMPT_TEMPLATE = """\
+ВАЖНО: Весь текст ДОЛЖЕН быть на РУССКОМ языке. temperature=0.1.
+
+Вы аналитик маркетинговых исследований. Пишете раздел отчёта для B2B-клиента.
+
+Заголовок отчёта: {report_title}
+Бриф клиента: {simulation_requirement}
+Текущий раздел: {section_title}
+
+═══════════════════════════════════════════════════════════════
+【ЖЁСТКИЕ ПРАВИЛА — нарушение недопустимо】
+═══════════════════════════════════════════════════════════════
+
+1. ЗАПРЕТ НА ПРОГНОЗЫ — пишите "по данным источников", НЕ "в будущем"
+2. ЗАПРЕТ НА ВЫДУМКИ — каждая цифра и факт ТОЛЬКО из инструментов
+3. ОБЯЗАТЕЛЬНОЕ ЦИТИРОВАНИЕ — каждый тезис подкреплён цитатой
+4. УКАЗАНИЕ ИСТОЧНИКА — [Pikabu], [Habr], [VC.ru] рядом с каждой цитатой
+5. ОБЪЁМ — раздел должен быть подробным (8-20 страниц)
+6. ЯЗЫК — только русский, переводите всё с других языков
+
+═══════════════════════════════════════════════════════════════
+【Доступные инструменты】(3-5 вызовов на раздел)
+═══════════════════════════════════════════════════════════════
+
+{tools_description}
+
+═══════════════════════════════════════════════════════════════
+【Рабочий процесс】
+═══════════════════════════════════════════════════════════════
+
+Вариант A — вызов инструмента:
+<tool_call>
+{{"name": "имя_инструмента", "parameters": {{"param": "value"}}}}
+</tool_call>
+
+Вариант B — финальный контент:
+Начните с "Final Answer:" и выведите текст раздела.
+
+⚠️ Нельзя совмещать tool_call и Final Answer в одном ответе.
+
+═══════════════════════════════════════════════════════════════
+【Формат раздела】
+═══════════════════════════════════════════════════════════════
+
+- ❌ Никаких заголовков (#, ##, ###)
+- ✅ **Жирный текст** для подразделов
+- ✅ Таблицы Markdown для сравнений
+- ✅ Списки для структурирования
+- ✅ Цитаты в формате > "текст" [Источник]
+- Объём: 8-20 страниц на раздел
+"""
+
+MARKET_SECTION_USER_PROMPT_TEMPLATE = """\
+Уже написанные разделы (не повторяйтесь):
+{previous_content}
+
+═══════════════════════════════════════════════════════════════
+Текущая задача: написать раздел "{section_title}"
+═══════════════════════════════════════════════════════════════
+
+Напоминания:
+1. Вызовите 3-5 инструментов перед написанием
+2. Каждый факт — с цитатой и указанием источника [Pikabu/Habr/VC.ru]
+3. Никаких прогнозов, только данные
+4. Объём: 8-20 страниц
+5. Формат: **жирный** вместо заголовков, таблицы для сравнений
+"""
+
+
+# ═══════════════════════════════════════════════════════════════
 # ReportAgent 主类
 # ═══════════════════════════════════════════════════════════════
 
@@ -892,7 +995,8 @@ class ReportAgent:
         simulation_id: str,
         simulation_requirement: str,
         llm_client: Optional[LLMClient] = None,
-        zep_tools: Optional[ZepToolsService] = None
+        zep_tools: Optional[ZepToolsService] = None,
+        mode: str = "social"
     ):
         """
         初始化Report Agent
@@ -903,13 +1007,18 @@ class ReportAgent:
             simulation_requirement: 模拟需求描述
             llm_client: LLM客户端（可选）
             zep_tools: Zep工具服务（可选）
+            mode: Режим работы: "social" (прогнозирование) или "market_research" (маркетинговое исследование)
         """
         self.graph_id = graph_id
         self.simulation_id = simulation_id
         self.simulation_requirement = simulation_requirement
+        self.mode = mode
         
         self.llm = llm_client or LLMClient()
         self.zep_tools = zep_tools or ZepToolsService()
+        
+        # Маркетинговые инструменты (инициализируются лениво)
+        self._market_tools = None
         
         # 工具定义
         self.tools = self._define_tools()
@@ -919,11 +1028,11 @@ class ReportAgent:
         # 控制台日志记录器（在 generate_report 中初始化）
         self.console_logger: Optional[ReportConsoleLogger] = None
         
-        logger.info(f"ReportAgent 初始化完成: graph_id={graph_id}, simulation_id={simulation_id}")
+        logger.info(f"ReportAgent 初始化完成: graph_id={graph_id}, simulation_id={simulation_id}, mode={mode}")
     
     def _define_tools(self) -> Dict[str, Dict[str, Any]]:
         """定义可用工具"""
-        return {
+        tools = {
             "insight_forge": {
                 "name": "insight_forge",
                 "description": TOOL_DESC_INSIGHT_FORGE,
@@ -957,6 +1066,37 @@ class ReportAgent:
                 }
             }
         }
+        
+        # Добавляем маркетинговые инструменты в market_research режиме
+        if self.mode == "market_research":
+            from .market_tools import (
+                TOOL_DESC_SWOT_BUILDER,
+                TOOL_DESC_MARKET_VOLUME,
+                TOOL_DESC_SEGMENTATION,
+            )
+            tools["swot_builder"] = {
+                "name": "swot_builder",
+                "description": TOOL_DESC_SWOT_BUILDER,
+                "parameters": {
+                    "competitor_name": "Название компании-конкурента для SWOT-анализа"
+                }
+            }
+            tools["market_volume_calculator"] = {
+                "name": "market_volume_calculator",
+                "description": TOOL_DESC_MARKET_VOLUME,
+                "parameters": {
+                    "query": "Запрос о рынке (например 'объём рынка мобильного банкинга')"
+                }
+            }
+            tools["segmentation_matrix"] = {
+                "name": "segmentation_matrix",
+                "description": TOOL_DESC_SEGMENTATION,
+                "parameters": {
+                    "query": "Запрос о целевой аудитории (например 'проблемы пользователей банковских приложений')"
+                }
+            }
+        
+        return tools
     
     def _execute_tool(self, tool_name: str, parameters: Dict[str, Any], report_context: str = "") -> str:
         """
@@ -1025,6 +1165,47 @@ class ReportAgent:
                 )
                 return result.to_text()
             
+            # ========== Маркетинговые инструменты ==========
+            
+            elif tool_name == "swot_builder":
+                competitor_name = parameters.get("competitor_name", "")
+                if not self._market_tools:
+                    from .market_tools import MarketToolsService
+                    self._market_tools = MarketToolsService(
+                        graph_id=self.graph_id,
+                        simulation_requirement=self.simulation_requirement,
+                        zep_tools=self.zep_tools,
+                        llm_client=self.llm,
+                    )
+                result = self._market_tools.swot_builder(competitor_name)
+                return result.to_text()
+            
+            elif tool_name == "market_volume_calculator":
+                query = parameters.get("query", "")
+                if not self._market_tools:
+                    from .market_tools import MarketToolsService
+                    self._market_tools = MarketToolsService(
+                        graph_id=self.graph_id,
+                        simulation_requirement=self.simulation_requirement,
+                        zep_tools=self.zep_tools,
+                        llm_client=self.llm,
+                    )
+                result = self._market_tools.market_volume_calculator(query)
+                return result.to_text()
+            
+            elif tool_name == "segmentation_matrix":
+                query = parameters.get("query", "")
+                if not self._market_tools:
+                    from .market_tools import MarketToolsService
+                    self._market_tools = MarketToolsService(
+                        graph_id=self.graph_id,
+                        simulation_requirement=self.simulation_requirement,
+                        zep_tools=self.zep_tools,
+                        llm_client=self.llm,
+                    )
+                result = self._market_tools.segmentation_matrix(query)
+                return result.to_text()
+            
             # ========== 向后兼容的旧工具（内部重定向到新工具） ==========
             
             elif tool_name == "search_graph":
@@ -1060,14 +1241,17 @@ class ReportAgent:
                 return json.dumps(result, ensure_ascii=False, indent=2)
             
             else:
-                return f"未知工具: {tool_name}。请使用以下工具之一: insight_forge, panorama_search, quick_search"
+                return f"未知工具: {tool_name}。请使用以下工具之一: {', '.join(self.tools.keys())}"
                 
         except Exception as e:
             logger.error(f"工具执行失败: {tool_name}, 错误: {str(e)}")
             return f"工具执行失败: {str(e)}"
     
     # 合法的工具名称集合，用于裸 JSON 兜底解析时校验
-    VALID_TOOL_NAMES = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
+    VALID_TOOL_NAMES = {
+        "insight_forge", "panorama_search", "quick_search", "interview_agents",
+        "swot_builder", "market_volume_calculator", "segmentation_matrix",
+    }
 
     def _parse_tool_calls(self, response: str) -> List[Dict[str, Any]]:
         """
@@ -1168,15 +1352,20 @@ class ReportAgent:
         if progress_callback:
             progress_callback("planning", 30, "正在生成报告大纲...")
         
-        system_prompt = PLAN_SYSTEM_PROMPT
-        user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
-            simulation_requirement=self.simulation_requirement,
-            total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
-            total_edges=context.get('graph_statistics', {}).get('total_edges', 0),
-            entity_types=list(context.get('graph_statistics', {}).get('entity_types', {}).keys()),
-            total_entities=context.get('total_entities', 0),
-            related_facts_json=json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2),
-        )
+        # Выбираем промпт в зависимости от режима
+        if self.mode == "market_research":
+            system_prompt = MARKET_PLAN_SYSTEM_PROMPT
+            user_prompt = f"Бриф клиента: {self.simulation_requirement}\n\nСоздайте план маркетингового исследования."
+        else:
+            system_prompt = PLAN_SYSTEM_PROMPT
+            user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
+                simulation_requirement=self.simulation_requirement,
+                total_nodes=context.get('graph_statistics', {}).get('total_nodes', 0),
+                total_edges=context.get('graph_statistics', {}).get('total_edges', 0),
+                entity_types=list(context.get('graph_statistics', {}).get('entity_types', {}).keys()),
+                total_entities=context.get('total_entities', 0),
+                related_facts_json=json.dumps(context.get('related_facts', [])[:10], ensure_ascii=False, indent=2),
+            )
 
         try:
             response = self.llm.chat_json(
@@ -1257,13 +1446,28 @@ class ReportAgent:
         if self.report_logger:
             self.report_logger.log_section_start(section.title, section_index)
         
-        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
-            report_title=outline.title,
-            report_summary=outline.summary,
-            simulation_requirement=self.simulation_requirement,
-            section_title=section.title,
-            tools_description=self._get_tools_description(),
-        )
+        # Выбираем промпты в зависимости от режима
+        if self.mode == "market_research":
+            system_prompt = MARKET_SECTION_SYSTEM_PROMPT_TEMPLATE.format(
+                report_title=outline.title,
+                simulation_requirement=self.simulation_requirement,
+                section_title=section.title,
+                tools_description=self._get_tools_description(),
+            )
+            section_user_template = MARKET_SECTION_USER_PROMPT_TEMPLATE
+            llm_temperature = 0.1  # Жёсткий контроль для маркетинговых отчётов
+            llm_max_tokens = 8192  # Больше токенов для длинных глав
+        else:
+            system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
+                report_title=outline.title,
+                report_summary=outline.summary,
+                simulation_requirement=self.simulation_requirement,
+                section_title=section.title,
+                tools_description=self._get_tools_description(),
+            )
+            section_user_template = SECTION_USER_PROMPT_TEMPLATE
+            llm_temperature = 0.5
+            llm_max_tokens = 4096
 
         # 构建用户prompt - 每个已完成章节各传入最大4000字
         if previous_sections:
@@ -1276,7 +1480,7 @@ class ReportAgent:
         else:
             previous_content = "（这是第一个章节）"
         
-        user_prompt = SECTION_USER_PROMPT_TEMPLATE.format(
+        user_prompt = section_user_template.format(
             previous_content=previous_content,
             section_title=section.title,
         )
@@ -1292,7 +1496,7 @@ class ReportAgent:
         min_tool_calls = 3  # 最少工具调用次数
         conflict_retries = 0  # 工具调用与Final Answer同时出现的连续冲突次数
         used_tools = set()  # 记录已调用过的工具名
-        all_tools = {"insight_forge", "panorama_search", "quick_search", "interview_agents"}
+        all_tools = set(self.tools.keys())  # Все доступные инструменты (зависит от режима)
 
         # 报告上下文，用于InsightForge的子问题生成
         report_context = f"章节标题: {section.title}\n模拟需求: {self.simulation_requirement}"
@@ -1308,8 +1512,8 @@ class ReportAgent:
             # 调用LLM
             response = self.llm.chat(
                 messages=messages,
-                temperature=0.5,
-                max_tokens=4096
+                temperature=llm_temperature,
+                max_tokens=llm_max_tokens
             )
 
             # 检查 LLM 返回是否为 None（API 异常或内容为空）
@@ -1511,8 +1715,8 @@ class ReportAgent:
         
         response = self.llm.chat(
             messages=messages,
-            temperature=0.5,
-            max_tokens=4096
+            temperature=llm_temperature,
+            max_tokens=llm_max_tokens
         )
 
         # 检查强制收尾时 LLM 返回是否为 None

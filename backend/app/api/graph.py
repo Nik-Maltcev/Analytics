@@ -534,6 +534,262 @@ def generate_ontology_from_pikabu():
         }), 500
 
 
+# ============== Market Research: proxy topics from Topic Analyzer ==============
+
+@graph_bp.route('/topics/external', methods=['GET'])
+def get_external_topics():
+    """
+    Проксирует список тем из Topic Analyzer API.
+    Фронтенд вызывает этот эндпоинт вместо прямого обращения к Topic Analyzer.
+
+    Query параметры:
+        source: pikabu | habr | vcru | all (по умолчанию all)
+        search: фильтр по имени (опционально)
+
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "topics": [
+                    {"id": 1, "name": "Финтех", "source": "vcru", "url": "..."},
+                    ...
+                ]
+            }
+        }
+    """
+    import requests
+
+    try:
+        source = request.args.get('source', 'all')
+        search = request.args.get('search', '')
+
+        api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
+        params = {"source": source}
+        if search:
+            params["search"] = search
+
+        logger.info(f"Fetching topics from Topic Analyzer: {api_url}/api/topics")
+        resp = requests.get(f"{api_url}/api/topics", params=params, timeout=15)
+        resp.raise_for_status()
+
+        data = resp.json()
+        topics = data.get("topics", [])
+
+        # Группируем по источнику для удобства фронтенда
+        grouped = {}
+        for t in topics:
+            src = t.get("source", "pikabu")
+            if src not in grouped:
+                grouped[src] = []
+            grouped[src].append(t)
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "topics": topics,
+                "grouped": grouped,
+                "total": len(topics),
+            }
+        })
+
+    except requests.ConnectionError:
+        return jsonify({
+            "success": False,
+            "error": f"Не удалось подключиться к Topic Analyzer: {Config.TOPIC_ANALYZER_API_URL}"
+        }), 502
+    except Exception as e:
+        logger.error(f"Failed to fetch external topics: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@graph_bp.route('/ontology/generate-from-market-research', methods=['POST'])
+def generate_ontology_from_market_research():
+    """
+    Маркетинговое исследование: принимает мультиселект тем из Topic Analyzer,
+    загружает данные по каждой теме, тегирует по источнику, строит граф.
+
+    Request (JSON):
+        {
+            "topic_ids": [1, 5, 12],
+            "brief": "Исследование рынка мобильного банкинга для Тинькофф",
+            "project_name": "Тинькофф — мобильный банкинг"  // опционально
+        }
+
+    Returns:
+        {
+            "success": true,
+            "data": {
+                "project_id": "proj_xxxx",
+                "ontology": {...},
+                "total_text_length": 123456,
+                "topics_loaded": [
+                    {"topic_id": 1, "name": "Банки", "source": "pikabu", "posts_count": 50},
+                    ...
+                ]
+            }
+        }
+    """
+    import requests
+
+    try:
+        logger.info("=== Market Research: multi-topic ontology generation ===")
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "JSON body required"}), 400
+
+        topic_ids = data.get('topic_ids', [])
+        brief = data.get('brief', '').strip()
+        project_name = data.get('project_name', 'Market Research')
+
+        if not topic_ids:
+            return jsonify({"success": False, "error": "topic_ids is required (array of topic IDs)"}), 400
+        if not brief:
+            return jsonify({"success": False, "error": "brief is required (client research description)"}), 400
+
+        api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
+
+        # Загружаем данные по каждой теме из Topic Analyzer
+        topics_data = []
+        topics_loaded = []
+
+        for topic_id in topic_ids:
+            logger.info(f"Loading topic {topic_id} from Topic Analyzer...")
+
+            try:
+                resp = requests.get(f"{api_url}/api/posts/{topic_id}", timeout=60)
+                resp.raise_for_status()
+                topic_data = resp.json()
+
+                posts = topic_data.get("posts", [])
+                topic_name = topic_data.get("topic_name", f"Topic {topic_id}")
+                topic_source = topic_data.get("source", "pikabu")
+
+                topics_data.append({
+                    "topic_name": topic_name,
+                    "source": topic_source,
+                    "posts": posts,
+                })
+                topics_loaded.append({
+                    "topic_id": topic_id,
+                    "name": topic_name,
+                    "source": topic_source,
+                    "posts_count": len(posts),
+                    "comments_count": sum(len(p.get("comments", [])) for p in posts),
+                })
+                logger.info(f"  Loaded: {topic_name} [{topic_source}] — {len(posts)} posts")
+
+            except requests.ConnectionError:
+                return jsonify({
+                    "success": False,
+                    "error": f"Не удалось подключиться к Topic Analyzer: {api_url}"
+                }), 502
+            except requests.HTTPError as e:
+                if e.response and e.response.status_code == 404:
+                    logger.warning(f"Topic {topic_id} not found, skipping")
+                    continue
+                raise
+            except Exception as e:
+                logger.warning(f"Failed to load topic {topic_id}: {e}")
+                continue
+
+        if not topics_data:
+            return jsonify({
+                "success": False,
+                "error": "Не удалось загрузить данные ни по одной теме"
+            }), 400
+
+        # Форматируем все данные с тегами источников
+        from ..services.pikabu_formatter import PikabuFormatter
+
+        stats = PikabuFormatter.estimate_multi_source_size(topics_data)
+        logger.info(f"Multi-source data: {stats}")
+
+        document_text = PikabuFormatter.format_multi_source(
+            topics_data=topics_data,
+            brief=brief,
+        )
+
+        if not document_text.strip():
+            return jsonify({
+                "success": False,
+                "error": "Отформатированный текст пуст — возможно, в темах нет постов"
+            }), 400
+
+        # Создаём проект
+        project = ProjectManager.create_project(name=project_name)
+        project.simulation_requirement = brief
+        project.files.append({
+            "filename": "market_research_data.md",
+            "size": len(document_text.encode('utf-8'))
+        })
+
+        project.total_text_length = len(document_text)
+        ProjectManager.save_extracted_text(project.project_id, document_text)
+        logger.info(f"Project created: {project.project_id}, text: {len(document_text)} chars")
+
+        # Генерируем бизнес-онтологию
+        logger.info("Generating business ontology...")
+        generator = OntologyGenerator()
+
+        last_error = None
+        for attempt in range(3):
+            try:
+                ontology = generator.generate(
+                    document_texts=[document_text],
+                    simulation_requirement=brief,
+                    additional_context="Режим: маркетинговое исследование. "
+                        "Фокус на бизнес-сущностях: конкуренты, доли рынка, "
+                        "каналы продвижения, сегменты ЦА, боли пользователей, "
+                        "ценовые ожидания.",
+                )
+                break
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Ontology generation attempt {attempt + 1} failed: {e}")
+                import time
+                time.sleep(2)
+        else:
+            raise last_error
+
+        entity_count = len(ontology.get("entity_types", []))
+        edge_count = len(ontology.get("edge_types", []))
+        logger.info(f"Business ontology: {entity_count} entity types, {edge_count} edge types")
+
+        project.ontology = {
+            "entity_types": ontology.get("entity_types", []),
+            "edge_types": ontology.get("edge_types", []),
+        }
+        project.analysis_summary = ontology.get("analysis_summary", "")
+        project.status = ProjectStatus.ONTOLOGY_GENERATED
+        ProjectManager.save_project(project)
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": project.project_id,
+                "project_name": project.name,
+                "ontology": project.ontology,
+                "analysis_summary": project.analysis_summary,
+                "total_text_length": project.total_text_length,
+                "topics_loaded": topics_loaded,
+                "stats": stats,
+                "mode": "market_research",
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Market research generation failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 # ============== 接口2：构建图谱 ==============
 
 @graph_bp.route('/build', methods=['POST'])

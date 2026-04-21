@@ -63,6 +63,9 @@ class Config:
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))
     REPORT_AGENT_TEMPERATURE = float(os.environ.get('REPORT_AGENT_TEMPERATURE', '0.5'))
     
+    # Topic Analyzer интеграция (для маркетинговых исследований)
+    TOPIC_ANALYZER_API_URL = os.environ.get('TOPIC_ANALYZER_API_URL', 'http://localhost:8000')
+    
     @classmethod
     def validate(cls):
         """验证必要配置"""

@@ -121,78 +121,155 @@
         <!-- Right: Console -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- Upload Area -->
+            <!-- Mode Switcher -->
             <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">01 / Исходные данные</span>
-                <span class="console-meta">
-                  <label class="mode-toggle">
-                    <input type="checkbox" v-model="promptOnlyMode" :disabled="loading">
-                    <span class="toggle-label">{{ promptOnlyMode ? 'Только промпт' : 'С документами' }}</span>
-                  </label>
-                </span>
+              <div class="mode-switcher">
+                <button 
+                  class="mode-btn" 
+                  :class="{ active: workMode === 'market_research' }"
+                  @click="workMode = 'market_research'"
+                >
+                  📊 Маркетинговое исследование
+                </button>
+                <button 
+                  class="mode-btn" 
+                  :class="{ active: workMode === 'prediction' }"
+                  @click="workMode = 'prediction'"
+                >
+                  🔮 Прогнозирование
+                </button>
               </div>
-              
-              <div v-if="!promptOnlyMode"
-                class="upload-zone"
-                :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
-                @dragover.prevent="handleDragOver"
-                @dragleave.prevent="handleDragLeave"
-                @drop.prevent="handleDrop"
-                @click="triggerFileInput"
-              >
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept=".pdf,.md,.txt"
-                  @change="handleFileSelect"
-                  style="display: none"
-                  :disabled="loading"
-                />
-                
-                <div v-if="files.length === 0" class="upload-placeholder">
-                  <div class="upload-icon">↑</div>
-                  <div class="upload-title">Перетащите файлы сюда</div>
-                  <div class="upload-hint">или нажмите для выбора • PDF, MD, TXT</div>
+            </div>
+
+            <!-- ═══ Market Research Mode ═══ -->
+            <template v-if="workMode === 'market_research'">
+              <div class="console-section">
+                <div class="console-header">
+                  <span class="console-label">01 / Выбор тем (1-5)</span>
+                  <span class="console-meta">{{ selectedTopicIds.length }}/5 выбрано</span>
                 </div>
                 
-                <div v-else class="file-list">
-                  <div v-for="(file, index) in files" :key="index" class="file-item">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">{{ file.name }}</span>
-                    <button @click.stop="removeFile(index)" class="remove-btn">×</button>
+                <div v-if="topicsLoading" class="topics-loading">
+                  Загрузка тем из Topic Analyzer...
+                </div>
+                <div v-else-if="topicsError" class="topics-error">
+                  {{ topicsError }}
+                  <button class="retry-btn" @click="loadExternalTopics">Повторить</button>
+                </div>
+                <div v-else class="topics-selector">
+                  <div v-for="(topics, source) in groupedTopics" :key="source" class="source-group">
+                    <div class="source-header">{{ sourceLabels[source] || source }}</div>
+                    <div class="topics-grid">
+                      <button
+                        v-for="topic in topics"
+                        :key="topic.id"
+                        class="topic-chip"
+                        :class="{ selected: isTopicSelected(topic.id), disabled: !isTopicSelected(topic.id) && selectedTopicIds.length >= 5 }"
+                        @click="toggleTopic(topic.id)"
+                        :disabled="!isTopicSelected(topic.id) && selectedTopicIds.length >= 5"
+                      >
+                        {{ topic.name }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              <div v-else class="prompt-only-hint">
-                <div class="hint-icon">⚡</div>
-                <div class="hint-text">LLM сгенерирует сценарий из вашего промпта</div>
-                <div class="hint-sub">Документы не нужны — AI создаст контекст автоматически</div>
-              </div>
-            </div>
 
-            <!-- Divider -->
-            <div class="console-divider">
-              <span>Параметры</span>
-            </div>
+              <div class="console-divider"><span>Бриф клиента</span></div>
 
-            <!-- Input Area -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">>_ 02 / Промпт симуляции</span>
+              <div class="console-section">
+                <div class="console-header">
+                  <span class="console-label">>_ 02 / Описание задачи</span>
+                </div>
+                <div class="input-wrapper">
+                  <textarea
+                    v-model="brief"
+                    class="code-input"
+                    placeholder="// Опишите задачу клиента: ниша, продукт, что нужно исследовать"
+                    rows="4"
+                    :disabled="loading"
+                  ></textarea>
+                  <div class="model-badge">Режим: Market Research</div>
+                </div>
               </div>
-              <div class="input-wrapper">
-                <textarea
-                  v-model="formData.simulationRequirement"
-                  class="code-input"
-                  placeholder="// Опишите на естественном языке, что нужно смоделировать или спрогнозировать"
-                  rows="6"
-                  :disabled="loading"
-                ></textarea>
-                <div class="model-badge">Движок: MiroFish-V1.0</div>
+            </template>
+
+            <!-- ═══ Prediction Mode (existing) ═══ -->
+            <template v-else>
+              <!-- Upload Area -->
+              <div class="console-section">
+                <div class="console-header">
+                  <span class="console-label">01 / Исходные данные</span>
+                  <span class="console-meta">
+                    <label class="mode-toggle">
+                      <input type="checkbox" v-model="promptOnlyMode" :disabled="loading">
+                      <span class="toggle-label">{{ promptOnlyMode ? 'Только промпт' : 'С документами' }}</span>
+                    </label>
+                  </span>
+                </div>
+                
+                <div v-if="!promptOnlyMode"
+                  class="upload-zone"
+                  :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
+                  @dragover.prevent="handleDragOver"
+                  @dragleave.prevent="handleDragLeave"
+                  @drop.prevent="handleDrop"
+                  @click="triggerFileInput"
+                >
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    multiple
+                    accept=".pdf,.md,.txt"
+                    @change="handleFileSelect"
+                    style="display: none"
+                    :disabled="loading"
+                  />
+                  
+                  <div v-if="files.length === 0" class="upload-placeholder">
+                    <div class="upload-icon">↑</div>
+                    <div class="upload-title">Перетащите файлы сюда</div>
+                    <div class="upload-hint">или нажмите для выбора • PDF, MD, TXT</div>
+                  </div>
+                  
+                  <div v-else class="file-list">
+                    <div v-for="(file, index) in files" :key="index" class="file-item">
+                      <span class="file-icon">📄</span>
+                      <span class="file-name">{{ file.name }}</span>
+                      <button @click.stop="removeFile(index)" class="remove-btn">×</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-else class="prompt-only-hint">
+                  <div class="hint-icon">⚡</div>
+                  <div class="hint-text">LLM сгенерирует сценарий из вашего промпта</div>
+                  <div class="hint-sub">Документы не нужны — AI создаст контекст автоматически</div>
+                </div>
               </div>
+
+              <div class="console-divider"><span>Параметры</span></div>
+
+              <div class="console-section">
+                <div class="console-header">
+                  <span class="console-label">>_ 02 / Промпт симуляции</span>
+                </div>
+                <div class="input-wrapper">
+                  <textarea
+                    v-model="formData.simulationRequirement"
+                    class="code-input"
+                    placeholder="// Опишите на естественном языке, что нужно смоделировать или спрогнозировать"
+                    rows="6"
+                    :disabled="loading"
+                  ></textarea>
+                  <div class="model-badge">Движок: MiroFish-V1.0</div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Error -->
+            <div v-if="error" class="console-section error-section">
+              <div class="error-msg">{{ error }}</div>
             </div>
 
             <!-- Start Button -->
@@ -202,7 +279,9 @@
                 @click="startSimulation"
                 :disabled="!canSubmit || loading"
               >
-                <span v-if="!loading">Запустить</span>
+                <span v-if="!loading">
+                  {{ workMode === 'market_research' ? 'Запустить исследование' : 'Запустить' }}
+                </span>
                 <span v-else>Инициализация...</span>
                 <span class="btn-arrow">→</span>
               </button>
@@ -218,111 +297,153 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
+import { getExternalTopics, generateMarketResearch } from '../api/graph'
 
 const router = useRouter()
 
-// Form data
-const formData = ref({
-  simulationRequirement: ''
-})
+// ═══ Режим работы ═══
+const workMode = ref('market_research') // 'market_research' | 'prediction'
 
-// File list
+// ═══ Market Research: темы из Topic Analyzer ═══
+const externalTopics = ref([])       // Все темы
+const groupedTopics = ref({})        // Сгруппированные по источнику
+const selectedTopicIds = ref([])     // Выбранные topic_id
+const topicsLoading = ref(false)
+const topicsError = ref('')
+
+// Загрузка тем из Topic Analyzer
+const loadExternalTopics = async () => {
+  topicsLoading.value = true
+  topicsError.value = ''
+  try {
+    const response = await getExternalTopics('all')
+    if (response.success) {
+      externalTopics.value = response.data.topics || []
+      groupedTopics.value = response.data.grouped || {}
+    } else {
+      topicsError.value = response.error || 'Ошибка загрузки тем'
+    }
+  } catch (err) {
+    topicsError.value = 'Topic Analyzer недоступен. Проверьте подключение.'
+  } finally {
+    topicsLoading.value = false
+  }
+}
+
+// Переключение выбора темы
+const toggleTopic = (topicId) => {
+  const idx = selectedTopicIds.value.indexOf(topicId)
+  if (idx >= 0) {
+    selectedTopicIds.value.splice(idx, 1)
+  } else if (selectedTopicIds.value.length < 5) {
+    selectedTopicIds.value.push(topicId)
+  }
+}
+
+const isTopicSelected = (topicId) => selectedTopicIds.value.includes(topicId)
+
+// Человекочитаемые названия источников
+const sourceLabels = { pikabu: 'Pikabu', habr: 'Habr', vcru: 'VC.ru' }
+
+// ═══ Prediction mode (существующий) ═══
+const formData = ref({ simulationRequirement: '' })
 const files = ref([])
-
-// State
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
-
-// File input ref
 const fileInput = ref(null)
+const promptOnlyMode = ref(false)
 
-// Computed: can submit
+// ═══ Общий бриф (используется в обоих режимах) ═══
+const brief = ref('')
+
+// ═══ Computed ═══
 const canSubmit = computed(() => {
+  if (workMode.value === 'market_research') {
+    return selectedTopicIds.value.length > 0 && brief.value.trim() !== ''
+  }
+  // prediction mode
   if (promptOnlyMode.value) {
     return formData.value.simulationRequirement.trim() !== ''
   }
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
 
-// Prompt-only mode toggle
-const promptOnlyMode = ref(false)
+// ═══ Lifecycle ═══
+onMounted(() => {
+  loadExternalTopics()
+})
 
-// Trigger file select
-const triggerFileInput = () => {
-  if (!loading.value) {
-    fileInput.value?.click()
+watch(workMode, (newMode) => {
+  if (newMode === 'market_research' && externalTopics.value.length === 0) {
+    loadExternalTopics()
   }
-}
+})
 
-// Handle file select
-const handleFileSelect = (event) => {
-  const selectedFiles = Array.from(event.target.files)
-  addFiles(selectedFiles)
-}
-
-// Handle drag events
-const handleDragOver = (e) => {
-  if (!loading.value) {
-    isDragOver.value = true
-  }
-}
-
-const handleDragLeave = (e) => {
-  isDragOver.value = false
-}
-
+// ═══ File handling (prediction mode) ═══
+const triggerFileInput = () => { if (!loading.value) fileInput.value?.click() }
+const handleFileSelect = (event) => addFiles(Array.from(event.target.files))
+const handleDragOver = () => { if (!loading.value) isDragOver.value = true }
+const handleDragLeave = () => { isDragOver.value = false }
 const handleDrop = (e) => {
   isDragOver.value = false
-  if (loading.value) return
-  
-  const droppedFiles = Array.from(e.dataTransfer.files)
-  addFiles(droppedFiles)
+  if (!loading.value) addFiles(Array.from(e.dataTransfer.files))
 }
-
-// Add files
 const addFiles = (newFiles) => {
-  const validFiles = newFiles.filter(file => {
-    const ext = file.name.split('.').pop().toLowerCase()
-    return ['pdf', 'md', 'txt'].includes(ext)
-  })
-  files.value.push(...validFiles)
+  files.value.push(...newFiles.filter(f => ['pdf','md','txt'].includes(f.name.split('.').pop().toLowerCase())))
 }
+const removeFile = (index) => { files.value.splice(index, 1) }
 
-// Remove file
-const removeFile = (index) => {
-  files.value.splice(index, 1)
-}
-
-// Scroll to bottom
 const scrollToBottom = () => {
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  })
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
 }
 
-// Start simulation - redirect to Process page
-const startSimulation = () => {
+// ═══ Start ═══
+const startSimulation = async () => {
   if (!canSubmit.value || loading.value) return
-  
-  // Store pending upload data
-  import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(
-      promptOnlyMode.value ? [] : files.value,
-      formData.value.simulationRequirement,
-      promptOnlyMode.value
-    )
-    
-    // Redirect to Process page (new project)
-    router.push({
-      name: 'Process',
-      params: { projectId: 'new' }
+
+  if (workMode.value === 'market_research') {
+    // Маркетинговое исследование
+    loading.value = true
+    error.value = ''
+    try {
+      const response = await generateMarketResearch({
+        topic_ids: selectedTopicIds.value,
+        brief: brief.value,
+        project_name: `Research: ${brief.value.substring(0, 50)}`,
+      })
+      if (response.success && response.data?.mirofish_project_id) {
+        router.push({
+          name: 'Process',
+          params: { projectId: response.data.mirofish_project_id }
+        })
+      } else if (response.success && response.data?.project_id) {
+        router.push({
+          name: 'Process',
+          params: { projectId: response.data.project_id }
+        })
+      } else {
+        error.value = response.error || 'Ошибка создания исследования'
+      }
+    } catch (err) {
+      error.value = err.message || 'Ошибка подключения'
+    } finally {
+      loading.value = false
+    }
+  } else {
+    // Prediction mode (существующий)
+    import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
+      setPendingUpload(
+        promptOnlyMode.value ? [] : files.value,
+        formData.value.simulationRequirement,
+        promptOnlyMode.value
+      )
+      router.push({ name: 'Process', params: { projectId: 'new' } })
     })
-  })
+  }
 }
 </script>
 
@@ -953,5 +1074,97 @@ const startSimulation = () => {
     max-width: 200px;
     margin-bottom: 20px;
   }
+}
+
+/* ═══ Mode Switcher ═══ */
+.mode-switcher {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mode-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.mode-btn.active {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #FF6B35;
+}
+.mode-btn:hover:not(.active) {
+  border-color: #555;
+  color: #ccc;
+}
+
+/* ═══ Topics Selector ═══ */
+.topics-loading, .topics-error {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-size: 13px;
+}
+.topics-error { color: #C5283D; }
+.retry-btn {
+  margin-top: 8px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid #555;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 12px;
+}
+.source-group { margin-bottom: 12px; }
+.source-header {
+  font-size: 11px;
+  color: #FF6B35;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+.topics-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.topic-chip {
+  padding: 5px 12px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.topic-chip:hover:not(.disabled) {
+  border-color: #FF6B35;
+  color: #fff;
+}
+.topic-chip.selected {
+  background: #FF6B35;
+  border-color: #FF6B35;
+  color: #000;
+  font-weight: 600;
+}
+.topic-chip.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.error-section { margin-top: 8px; }
+.error-msg {
+  color: #C5283D;
+  font-size: 13px;
+  padding: 8px 12px;
+  border: 1px solid #C5283D33;
+  background: #C5283D11;
 }
 </style>

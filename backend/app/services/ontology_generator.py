@@ -1,6 +1,10 @@
 """
 本体生成服务
-接口1：分析文本内容，生成适合社会模拟的实体和关系类型定义
+接口1：分析文本内容，生成实体和关系类型定义
+
+Поддерживает два режима:
+- social: социальная симуляция (оригинальный MiroFish)
+- market_research: маркетинговое исследование (бизнес-сущности)
 """
 
 import json
@@ -155,6 +159,85 @@ B. **具体类型（8个，根据文本内容设计）**：
 """
 
 
+# ═══════════════════════════════════════════════════════════════
+# Бизнес-онтология для маркетинговых исследований
+# ═══════════════════════════════════════════════════════════════
+
+ONTOLOGY_MARKET_RESEARCH_PROMPT = """Вы эксперт по проектированию онтологий для маркетинговых исследований. Ваша задача — проанализировать данные из нескольких источников (Pikabu, Habr, VC.ru) и спроектировать онтологию для построения графа знаний, ориентированного на бизнес-аналитику.
+
+**ВАЖНО: Вы должны вывести валидный JSON и ничего больше.**
+
+## Контекст
+
+Данные собраны с трёх русскоязычных площадок и помечены тегами:
+- [source:pikabu] — пользовательские обсуждения, жалобы, отзывы, боли потребителей
+- [source:habr] — экспертные статьи, технические обзоры, управленческие кейсы
+- [source:vc] — бизнес-аналитика, объёмы рынка, инвестиции, стратегии компаний
+
+## Обязательные типы сущностей (ровно 10)
+
+Вы ДОЛЖНЫ включить следующие 8 бизнес-типов + 2 fallback:
+
+1. **Competitor** — компания-конкурент на рынке. Атрибуты: company_name, market_position, key_product.
+2. **Product** — продукт или сервис. Атрибуты: product_name, category, pricing_model.
+3. **TargetSegment** — сегмент целевой аудитории. Атрибуты: segment_name, segment_size, demographics.
+4. **PainPoint** — боль или проблема пользователя. Атрибуты: pain_description, severity, frequency. Приоритетный источник: [source:pikabu].
+5. **MarketShare** — данные о доле рынка или объёме. Атрибуты: metric_value, metric_period, data_source. Приоритетный источник: [source:vc].
+6. **MarketingChannel** — канал продвижения. Атрибуты: channel_name, channel_type, effectiveness.
+7. **PriceExpectation** — ценовое ожидание потребителей. Атрибуты: price_range, willingness_to_pay, comparison_basis.
+8. **Expert** — эксперт или лидер мнений. Атрибуты: expert_name, expertise_area, credibility. Приоритетный источник: [source:habr].
+9. **Person** — любой человек, не подходящий под другие типы (fallback). Атрибуты: full_name, role.
+10. **Organization** — любая организация, не подходящая под Competitor (fallback). Атрибуты: org_name, org_type.
+
+## Обязательные типы связей (ровно 8)
+
+1. **COMPETES_WITH** — конкуренция между компаниями. Source: Competitor → Target: Competitor.
+2. **HAS_PAIN_POINT** — сегмент испытывает боль. Source: TargetSegment → Target: PainPoint.
+3. **OFFERS_PRODUCT** — компания предлагает продукт. Source: Competitor → Target: Product.
+4. **TARGETS_SEGMENT** — компания нацелена на сегмент. Source: Competitor → Target: TargetSegment.
+5. **HOLDS_MARKET_SHARE** — компания занимает долю рынка. Source: Competitor → Target: MarketShare.
+6. **USES_CHANNEL** — компания использует канал. Source: Competitor → Target: MarketingChannel.
+7. **EXPECTS_PRICE** — сегмент ожидает цену. Source: TargetSegment → Target: PriceExpectation.
+8. **EVALUATES** — эксперт оценивает продукт/компанию. Source: Expert → Target: Product.
+
+## Формат вывода
+
+```json
+{
+    "entity_types": [
+        {
+            "name": "EntityTypeName",
+            "description": "Short description in English, max 100 chars",
+            "attributes": [
+                {"name": "attr_name", "type": "text", "description": "Description"}
+            ],
+            "examples": ["Example1", "Example2"]
+        }
+    ],
+    "edge_types": [
+        {
+            "name": "RELATION_NAME",
+            "description": "Short description in English, max 100 chars",
+            "source_targets": [
+                {"source": "SourceType", "target": "TargetType"}
+            ],
+            "attributes": []
+        }
+    ],
+    "analysis_summary": "Краткий анализ данных на русском языке"
+}
+```
+
+## Правила
+
+- Ровно 10 entity_types, ровно 8 edge_types
+- Атрибуты НЕ могут называться: name, uuid, group_id, created_at, summary (зарезервировано)
+- Description на английском, не более 100 символов
+- analysis_summary на русском — краткий обзор найденных данных
+- Примеры (examples) берите из реальных данных в тексте
+"""
+
+
 class OntologyGenerator:
     """
     本体生成器
@@ -168,7 +251,8 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str] = None
+        additional_context: Optional[str] = None,
+        mode: str = "auto"
     ) -> Dict[str, Any]:
         """
         生成本体定义
@@ -177,31 +261,50 @@ class OntologyGenerator:
             document_texts: 文档文本列表
             simulation_requirement: 模拟需求描述
             additional_context: 额外上下文
+            mode: Режим генерации:
+                - "auto": автоопределение (market_research если есть теги [source:])
+                - "social": социальная симуляция (оригинальный)
+                - "market_research": маркетинговое исследование
             
         Returns:
             本体定义（entity_types, edge_types等）
         """
+        # Автоопределение режима
+        if mode == "auto":
+            combined = " ".join(document_texts[:3])[:5000]
+            if "[source:" in combined or "маркетинговое исследование" in (additional_context or "").lower():
+                mode = "market_research"
+            else:
+                mode = "social"
+        
+        # Выбираем промпт
+        if mode == "market_research":
+            system_prompt = ONTOLOGY_MARKET_RESEARCH_PROMPT
+        else:
+            system_prompt = ONTOLOGY_SYSTEM_PROMPT
+        
         # 构建用户消息
         user_message = self._build_user_message(
             document_texts, 
             simulation_requirement,
-            additional_context
+            additional_context,
+            mode=mode
         )
         
         messages = [
-            {"role": "system", "content": ONTOLOGY_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message}
         ]
         
         # 调用LLM
         result = self.llm_client.chat_json(
             messages=messages,
-            temperature=0.3,
+            temperature=0.2 if mode == "market_research" else 0.3,
             max_tokens=8192
         )
         
         # 验证和后处理
-        result = self._validate_and_process(result)
+        result = self._validate_and_process(result, mode=mode)
         
         return result
     
@@ -212,7 +315,8 @@ class OntologyGenerator:
         self,
         document_texts: List[str],
         simulation_requirement: str,
-        additional_context: Optional[str]
+        additional_context: Optional[str],
+        mode: str = "social"
     ) -> str:
         """构建用户消息"""
         
@@ -225,7 +329,30 @@ class OntologyGenerator:
             combined_text = combined_text[:self.MAX_TEXT_LENGTH_FOR_LLM]
             combined_text += f"\n\n...(原文共{original_length}字，已截取前{self.MAX_TEXT_LENGTH_FOR_LLM}字用于本体分析)..."
         
-        message = f"""## 模拟需求
+        if mode == "market_research":
+            message = f"""## Бриф маркетингового исследования
+
+{simulation_requirement}
+
+## Данные из источников (с тегами [source:pikabu], [source:habr], [source:vc])
+
+{combined_text}
+"""
+            if additional_context:
+                message += f"\n## Дополнительный контекст\n\n{additional_context}\n"
+            
+            message += """
+Проанализируйте данные и создайте бизнес-онтологию.
+
+**Обязательные правила**:
+1. Ровно 10 типов сущностей (8 бизнес + Person + Organization)
+2. Ровно 8 типов связей
+3. Примеры (examples) — из реальных данных выше
+4. Учитывайте теги источников: PainPoint из [source:pikabu], MarketShare из [source:vc], Expert из [source:habr]
+5. Атрибуты НЕ могут называться name, uuid, group_id, created_at, summary
+"""
+        else:
+            message = f"""## 模拟需求
 
 {simulation_requirement}
 
@@ -233,15 +360,10 @@ class OntologyGenerator:
 
 {combined_text}
 """
-        
-        if additional_context:
-            message += f"""
-## 额外说明
-
-{additional_context}
-"""
-        
-        message += """
+            if additional_context:
+                message += f"\n## 额外说明\n\n{additional_context}\n"
+            
+            message += """
 请根据以上内容，设计适合社会舆论模拟的实体类型和关系类型。
 
 **必须遵守的规则**：
@@ -254,7 +376,7 @@ class OntologyGenerator:
         
         return message
     
-    def _validate_and_process(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_and_process(self, result: Dict[str, Any], mode: str = "social") -> Dict[str, Any]:
         """验证和后处理结果"""
         
         # 确保必要字段存在
