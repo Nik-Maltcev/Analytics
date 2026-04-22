@@ -644,6 +644,9 @@ def generate_ontology_from_market_research():
         topic_ids = data.get('topic_ids', [])
         brief = data.get('brief', '').strip()
         project_name = data.get('project_name', 'Market Research')
+        days = data.get('days', 30)
+        if days not in (7, 14, 30):
+            days = 30
 
         if not topic_ids:
             return jsonify({"success": False, "error": "topic_ids is required (array of topic IDs)"}), 400
@@ -673,7 +676,7 @@ def generate_ontology_from_market_research():
             try:
                 parse_resp = requests.post(
                     f"{api_url}/api/analysis/start",
-                    json={"topic_id": topic_id, "days": 30, "source": t_source},
+                    json={"topic_id": topic_id, "days": days, "source": t_source},
                     timeout=15,
                 )
                 if parse_resp.status_code == 200:

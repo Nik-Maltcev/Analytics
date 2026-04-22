@@ -149,6 +149,14 @@
                   <span class="console-meta">{{ selectedTopicIds.length }}/5 выбрано</span>
                 </div>
                 
+                <!-- Период -->
+                <div class="period-selector">
+                  <span class="period-label">Период:</span>
+                  <button v-for="d in [7, 14, 30]" :key="d"
+                    class="period-btn" :class="{ active: days === d }"
+                    @click="days = d">{{ d }} дней</button>
+                </div>
+                
                 <div v-if="topicsLoading" class="topics-loading">
                   Загрузка тем из Topic Analyzer...
                 </div>
@@ -311,6 +319,7 @@ const workMode = ref('market_research') // 'market_research' | 'prediction'
 const externalTopics = ref([])       // Все темы
 const groupedTopics = ref({})        // Сгруппированные по источнику
 const selectedTopicIds = ref([])     // Выбранные topic_id
+const days = ref(30)                 // Период: 7 | 14 | 30
 const topicsLoading = ref(false)
 const topicsError = ref('')
 
@@ -413,6 +422,7 @@ const startSimulation = async () => {
       const response = await generateMarketResearch({
         topic_ids: selectedTopicIds.value,
         brief: brief.value,
+        days: days.value,
         project_name: `Research: ${brief.value.substring(0, 50)}`,
       })
       if (response.success && response.data?.mirofish_project_id) {
@@ -1104,6 +1114,36 @@ const startSimulation = async () => {
 }
 
 /* ═══ Topics Selector ═══ */
+.period-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.period-label {
+  font-size: 12px;
+  color: #888;
+}
+.period-btn {
+  padding: 4px 12px;
+  border: 1px solid #333;
+  background: transparent;
+  color: #aaa;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.period-btn.active {
+  background: #FF6B35;
+  border-color: #FF6B35;
+  color: #000;
+  font-weight: 600;
+}
+.period-btn:hover:not(.active) {
+  border-color: #555;
+  color: #fff;
+}
 .topics-loading, .topics-error {
   padding: 20px;
   text-align: center;
