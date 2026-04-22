@@ -107,7 +107,7 @@ export function generateMarketResearch(data) {
       url: '/api/graph/ontology/generate-from-market-research',
       method: 'post',
       data,
-      timeout: 600000 // 10 минут — загрузка данных + генерация онтологии
+      timeout: 1800000 // 30 минут — парсинг + генерация онтологии
     })
-  )
+  , 1) // Без retry — долгий запрос
 }

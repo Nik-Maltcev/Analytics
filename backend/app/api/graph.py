@@ -675,8 +675,8 @@ def generate_ontology_from_market_research():
 
             try:
                 parse_resp = requests.post(
-                    f"{api_url}/api/analysis/start",
-                    json={"topic_id": topic_id, "days": days, "source": t_source},
+                    f"{api_url}/api/parse/start",
+                    params={"topic_id": topic_id, "days": days, "source": t_source},
                     timeout=15,
                 )
                 if parse_resp.status_code == 200:
