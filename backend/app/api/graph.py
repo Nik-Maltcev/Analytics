@@ -689,9 +689,10 @@ def generate_ontology_from_market_research():
 
 
 def _market_research_background(project_id: str, topic_ids: list, brief: str, days: int):
-    """Фоновый процесс: парсинг + загрузка + онтология."""
+    """Фоновый процесс: параллельный парсинг + загрузка + онтология."""
     import requests
     import time as _time
+    import concurrent.futures
 
     try:
         api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
@@ -706,8 +707,9 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
         except Exception as e:
             logger.warning(f"Failed to fetch topics info: {e}")
 
-        # ═══ Автопарсинг ═══
-        for topic_id in topic_ids:
+        # ═══ ПАРАЛЛЕЛЬНЫЙ парсинг всех тем одновременно ═══
+        def _parse_single_topic(topic_id):
+            """Парсит одну тему и ждёт завершения."""
             t_info = topics_info.get(topic_id, {})
             t_source = t_info.get("source", "pikabu")
             logger.info(f"Auto-parsing: topic {topic_id} ({t_info.get('name', '?')}) [{t_source}]...")
@@ -719,36 +721,34 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
                     timeout=15,
                 )
                 if parse_resp.status_code == 200:
-                    parse_data = parse_resp.json()
-                    task_id = parse_data.get("task_id")
+                    task_id = parse_resp.json().get("task_id")
                     if task_id:
-                        logger.info(f"  Parse started: task_id={task_id}")
-                        for _ in range(120):  # 120 × 5s = 10 мин макс
+                        logger.info(f"  [{t_source}] Parse started: task_id={task_id}")
+                        for _ in range(180):  # 180 × 5s = 15 мин макс
                             _time.sleep(5)
                             try:
-                                status_resp = requests.get(
-                                    f"{api_url}/api/analysis/status/{task_id}",
-                                    timeout=10,
-                                )
-                                if status_resp.status_code == 200:
-                                    sdata = status_resp.json()
-                                    status = sdata.get("status", "")
-                                    progress = sdata.get("progress_percent", 0)
-                                    stage = sdata.get("current_stage", "")
-                                    logger.info(f"  [{t_source}] {status} {progress}% — {stage}")
-                                    if status in ("completed", "failed"):
-                                        break
+                                sr = requests.get(f"{api_url}/api/analysis/status/{task_id}", timeout=10)
+                                if sr.status_code == 200:
+                                    sd = sr.json()
+                                    st = sd.get("status", "")
+                                    logger.info(f"  [{t_source}] {st} {sd.get('progress_percent', 0)}%")
+                                    if st in ("completed", "failed"):
+                                        return
                                 else:
-                                    break
+                                    return
                             except Exception:
-                                break
+                                return
                 elif parse_resp.status_code == 409:
-                    logger.info(f"  Parse already running for topic {topic_id}")
-                    _time.sleep(10)
-                else:
-                    logger.warning(f"  Parse trigger returned {parse_resp.status_code}")
+                    logger.info(f"  [{t_source}] Parse already running, waiting 30s...")
+                    _time.sleep(30)
             except Exception as e:
                 logger.warning(f"  Auto-parse failed for topic {topic_id}: {e}")
+
+        # Запускаем все темы параллельно
+        logger.info(f"Starting parallel parse for {len(topic_ids)} topics...")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(topic_ids)) as executor:
+            executor.map(_parse_single_topic, topic_ids)
+        logger.info("All topics parsed.")
 
         # ═══ Загружаем данные ═══
         topics_data = []

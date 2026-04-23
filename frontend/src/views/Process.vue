@@ -633,6 +633,13 @@ const loadProject = async () => {
         await startBuildGraph()
       }
       
+      // Поллинг для market research: проект создан, онтология генерируется в фоне
+      if (response.data.status === 'created') {
+        currentPhase.value = 0
+        ontologyProgress.value = { message: 'Сбор данных и генерация онтологии...' }
+        startProjectStatusPolling()
+      }
+      
       // 继续轮询构建...的任务
       if (response.data.status === 'graph_building' && response.data.graph_build_task_id) {
         currentPhase.value = 1
@@ -652,6 +659,44 @@ const loadProject = async () => {
     error.value = 'Ошибка загрузки проекта: ' + (err.message || 'неизвестная ошибка')
   } finally {
     loading.value = false
+  }
+}
+
+// Поллинг статуса проекта (для market research async flow)
+let projectStatusTimer = null
+
+const startProjectStatusPolling = () => {
+  stopProjectStatusPolling()
+  projectStatusTimer = setInterval(async () => {
+    try {
+      const response = await getProject(currentProjectId.value)
+      if (response.success) {
+        projectData.value = response.data
+        const status = response.data.status
+        
+        if (status === 'ontology_generated') {
+          // Онтология готова — останавливаем поллинг и строим граф
+          stopProjectStatusPolling()
+          ontologyProgress.value = null
+          updatePhaseByStatus(status)
+          await startBuildGraph()
+        } else if (status === 'failed') {
+          stopProjectStatusPolling()
+          ontologyProgress.value = null
+          error.value = response.data.error || 'Ошибка генерации'
+        }
+        // status === 'created' — продолжаем поллить
+      }
+    } catch (err) {
+      console.log('Project status poll error:', err.message)
+    }
+  }, 5000) // каждые 5 сек
+}
+
+const stopProjectStatusPolling = () => {
+  if (projectStatusTimer) {
+    clearInterval(projectStatusTimer)
+    projectStatusTimer = null
   }
 }
 
@@ -1087,6 +1132,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopPolling()
   stopGraphPolling()
+  stopProjectStatusPolling()
 })
 </script>
 
