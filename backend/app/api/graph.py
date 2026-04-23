@@ -719,7 +719,7 @@ def generate_ontology_from_market_research():
             logger.info(f"Loading topic {topic_id} from Topic Analyzer...")
 
             try:
-                resp = requests.get(f"{api_url}/api/posts/{topic_id}", timeout=60)
+                resp = requests.get(f"{api_url}/api/posts/{topic_id}", params={"days": days}, timeout=60)
                 resp.raise_for_status()
                 topic_data = resp.json()
 
