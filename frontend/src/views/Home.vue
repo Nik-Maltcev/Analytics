@@ -425,12 +425,7 @@ const startSimulation = async () => {
         days: days.value,
         project_name: `Research: ${brief.value.substring(0, 50)}`,
       })
-      if (response.success && response.data?.mirofish_project_id) {
-        router.push({
-          name: 'Process',
-          params: { projectId: response.data.mirofish_project_id }
-        })
-      } else if (response.success && response.data?.project_id) {
+      if (response.success && response.data?.project_id) {
         router.push({
           name: 'Process',
           params: { projectId: response.data.project_id }

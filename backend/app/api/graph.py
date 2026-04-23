@@ -608,34 +608,31 @@ def get_external_topics():
 @graph_bp.route('/ontology/generate-from-market-research', methods=['POST'])
 def generate_ontology_from_market_research():
     """
-    Маркетинговое исследование: принимает мультиселект тем из Topic Analyzer,
-    загружает данные по каждой теме, тегирует по источнику, строит граф.
+    Маркетинговое исследование: принимает мультиселект тем из Topic Analyzer.
+    Сразу возвращает project_id, парсинг + онтология идут в фоне.
 
     Request (JSON):
         {
             "topic_ids": [1, 5, 12],
-            "brief": "Исследование рынка мобильного банкинга для Тинькофф",
-            "project_name": "Тинькофф — мобильный банкинг"  // опционально
+            "brief": "...",
+            "days": 7,
+            "project_name": "..."
         }
 
-    Returns:
+    Returns immediately:
         {
             "success": true,
             "data": {
                 "project_id": "proj_xxxx",
-                "ontology": {...},
-                "total_text_length": 123456,
-                "topics_loaded": [
-                    {"topic_id": 1, "name": "Банки", "source": "pikabu", "posts_count": 50},
-                    ...
-                ]
+                "status": "processing",
+                "message": "Исследование запущено, данные собираются..."
             }
         }
     """
     import requests
 
     try:
-        logger.info("=== Market Research: multi-topic ontology generation ===")
+        logger.info("=== Market Research: async multi-topic ontology generation ===")
 
         data = request.get_json()
         if not data:
@@ -653,9 +650,53 @@ def generate_ontology_from_market_research():
         if not brief:
             return jsonify({"success": False, "error": "brief is required (client research description)"}), 400
 
+        # Создаём проект сразу — чтобы вернуть project_id мгновенно
+        project = ProjectManager.create_project(name=project_name)
+        project.simulation_requirement = brief
+        project.status = ProjectStatus.CREATED
+        ProjectManager.save_project(project)
+
+        logger.info(f"Project created immediately: {project.project_id}")
+
+        # Запускаем тяжёлую работу в фоновом потоке
+        import threading
+        thread = threading.Thread(
+            target=_market_research_background,
+            args=(project.project_id, topic_ids, brief, days),
+            daemon=True,
+        )
+        thread.start()
+
+        # Возвращаем project_id сразу (< 1 сек)
+        return jsonify({
+            "success": True,
+            "data": {
+                "project_id": project.project_id,
+                "project_name": project.name,
+                "status": "processing",
+                "message": "Исследование запущено. Парсинг данных и генерация онтологии идут в фоне.",
+                "mode": "market_research",
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Market research init failed: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+def _market_research_background(project_id: str, topic_ids: list, brief: str, days: int):
+    """Фоновый процесс: парсинг + загрузка + онтология."""
+    import requests
+    import time as _time
+
+    try:
         api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
 
-        # ═══ Получаем инфо о темах для определения source ═══
+        # ═══ Получаем инфо о темах ═══
         topics_info = {}
         try:
             topics_resp = requests.get(f"{api_url}/api/topics", params={"source": "all"}, timeout=15)
@@ -665,9 +706,7 @@ def generate_ontology_from_market_research():
         except Exception as e:
             logger.warning(f"Failed to fetch topics info: {e}")
 
-        # ═══ Автопарсинг: запускаем сбор данных в Topic Analyzer ═══
-        import time as _time
-
+        # ═══ Автопарсинг ═══
         for topic_id in topic_ids:
             t_info = topics_info.get(topic_id, {})
             t_source = t_info.get("source", "pikabu")
@@ -684,7 +723,7 @@ def generate_ontology_from_market_research():
                     task_id = parse_data.get("task_id")
                     if task_id:
                         logger.info(f"  Parse started: task_id={task_id}")
-                        for _ in range(60):
+                        for _ in range(120):  # 120 × 5s = 10 мин макс
                             _time.sleep(5)
                             try:
                                 status_resp = requests.get(
@@ -711,57 +750,34 @@ def generate_ontology_from_market_research():
             except Exception as e:
                 logger.warning(f"  Auto-parse failed for topic {topic_id}: {e}")
 
-        # ═══ Загружаем данные по каждой теме из Topic Analyzer ═══
+        # ═══ Загружаем данные ═══
         topics_data = []
-        topics_loaded = []
-
         for topic_id in topic_ids:
             logger.info(f"Loading topic {topic_id} from Topic Analyzer...")
-
             try:
                 resp = requests.get(f"{api_url}/api/posts/{topic_id}", params={"days": days}, timeout=60)
                 resp.raise_for_status()
                 topic_data = resp.json()
-
                 posts = topic_data.get("posts", [])
-                topic_name = topic_data.get("topic_name", f"Topic {topic_id}")
-                topic_source = topic_data.get("source", "pikabu")
-
                 topics_data.append({
-                    "topic_name": topic_name,
-                    "source": topic_source,
+                    "topic_name": topic_data.get("topic_name", f"Topic {topic_id}"),
+                    "source": topic_data.get("source", "pikabu"),
                     "posts": posts,
                 })
-                topics_loaded.append({
-                    "topic_id": topic_id,
-                    "name": topic_name,
-                    "source": topic_source,
-                    "posts_count": len(posts),
-                    "comments_count": sum(len(p.get("comments", [])) for p in posts),
-                })
-                logger.info(f"  Loaded: {topic_name} [{topic_source}] — {len(posts)} posts")
-
-            except requests.ConnectionError:
-                return jsonify({
-                    "success": False,
-                    "error": f"Не удалось подключиться к Topic Analyzer: {api_url}"
-                }), 502
-            except requests.HTTPError as e:
-                if e.response and e.response.status_code == 404:
-                    logger.warning(f"Topic {topic_id} not found, skipping")
-                    continue
-                raise
+                logger.info(f"  Loaded: {topic_data.get('topic_name', '?')} [{topic_data.get('source', '?')}] — {len(posts)} posts")
             except Exception as e:
                 logger.warning(f"Failed to load topic {topic_id}: {e}")
-                continue
 
         if not topics_data:
-            return jsonify({
-                "success": False,
-                "error": "Не удалось загрузить данные ни по одной теме"
-            }), 400
+            logger.error(f"No data loaded for project {project_id}")
+            project = ProjectManager.get_project(project_id)
+            if project:
+                project.status = ProjectStatus.FAILED
+                project.error = "Не удалось загрузить данные ни по одной теме"
+                ProjectManager.save_project(project)
+            return
 
-        # Форматируем все данные с тегами источников
+        # ═══ Форматируем ═══
         from ..services.pikabu_formatter import PikabuFormatter
 
         stats = PikabuFormatter.estimate_multi_source_size(topics_data)
@@ -772,25 +788,17 @@ def generate_ontology_from_market_research():
             brief=brief,
         )
 
-        if not document_text.strip():
-            return jsonify({
-                "success": False,
-                "error": "Отформатированный текст пуст — возможно, в темах нет постов"
-            }), 400
-
-        # Создаём проект
-        project = ProjectManager.create_project(name=project_name)
-        project.simulation_requirement = brief
+        # Обновляем проект
+        project = ProjectManager.get_project(project_id)
         project.files.append({
             "filename": "market_research_data.md",
             "size": len(document_text.encode('utf-8'))
         })
-
         project.total_text_length = len(document_text)
-        ProjectManager.save_extracted_text(project.project_id, document_text)
-        logger.info(f"Project created: {project.project_id}, text: {len(document_text)} chars")
+        ProjectManager.save_extracted_text(project_id, document_text)
+        logger.info(f"Project updated: {project_id}, text: {len(document_text)} chars")
 
-        # Генерируем бизнес-онтологию
+        # ═══ Генерируем онтологию ═══
         logger.info("Generating business ontology...")
         generator = OntologyGenerator()
 
@@ -809,10 +817,13 @@ def generate_ontology_from_market_research():
             except Exception as e:
                 last_error = e
                 logger.warning(f"Ontology generation attempt {attempt + 1} failed: {e}")
-                import time
-                time.sleep(2)
+                _time.sleep(2)
         else:
-            raise last_error
+            logger.error(f"Ontology generation failed after 3 attempts: {last_error}")
+            project.status = ProjectStatus.FAILED
+            project.error = f"Ошибка генерации онтологии: {last_error}"
+            ProjectManager.save_project(project)
+            return
 
         entity_count = len(ontology.get("entity_types", []))
         edge_count = len(ontology.get("edge_types", []))
@@ -825,28 +836,18 @@ def generate_ontology_from_market_research():
         project.analysis_summary = ontology.get("analysis_summary", "")
         project.status = ProjectStatus.ONTOLOGY_GENERATED
         ProjectManager.save_project(project)
-
-        return jsonify({
-            "success": True,
-            "data": {
-                "project_id": project.project_id,
-                "project_name": project.name,
-                "ontology": project.ontology,
-                "analysis_summary": project.analysis_summary,
-                "total_text_length": project.total_text_length,
-                "topics_loaded": topics_loaded,
-                "stats": stats,
-                "mode": "market_research",
-            }
-        })
+        logger.info(f"Market research background completed: {project_id}")
 
     except Exception as e:
-        logger.error(f"Market research generation failed: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }), 500
+        logger.error(f"Market research background failed: {str(e)}")
+        try:
+            project = ProjectManager.get_project(project_id)
+            if project:
+                project.status = ProjectStatus.FAILED
+                project.error = str(e)
+                ProjectManager.save_project(project)
+        except Exception:
+            pass
 
 
 # ============== 接口2：构建图谱 ==============
