@@ -314,27 +314,42 @@ class GraphBuilderService:
                 for chunk in batch_chunks
             ]
             
-            # 发送到Zep
-            try:
-                batch_result = self.client.graph.add_batch(
-                    graph_id=graph_id,
-                    episodes=episodes
-                )
-                
-                # 收集返回的 episode uuid
-                if batch_result and isinstance(batch_result, list):
-                    for ep in batch_result:
-                        ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
-                        if ep_uuid:
-                            episode_uuids.append(ep_uuid)
-                
-                # 避免请求过快
-                time.sleep(1)
-                
-            except Exception as e:
-                if progress_callback:
-                    progress_callback(f"批次 {batch_num} 发送失败: {str(e)}", 0)
-                raise
+            # 发送到Zep (с retry при 429 rate limit)
+            max_retries = 5
+            for attempt in range(max_retries):
+                try:
+                    batch_result = self.client.graph.add_batch(
+                        graph_id=graph_id,
+                        episodes=episodes
+                    )
+                    
+                    # 收集返回的 episode uuid
+                    if batch_result and isinstance(batch_result, list):
+                        for ep in batch_result:
+                            ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
+                            if ep_uuid:
+                                episode_uuids.append(ep_uuid)
+                    
+                    # Пауза между батчами для Zep free plan rate limit
+                    time.sleep(3)
+                    break
+                    
+                except Exception as e:
+                    error_str = str(e)
+                    if '429' in error_str or 'Rate limit' in error_str:
+                        wait_time = 15 * (attempt + 1)  # 15, 30, 45, 60, 75 сек
+                        if progress_callback:
+                            progress_callback(
+                                f"Rate limit Zep, ожидание {wait_time}с... (попытка {attempt+1}/{max_retries})",
+                                (i + len(batch_chunks)) / total_chunks
+                            )
+                        time.sleep(wait_time)
+                        if attempt == max_retries - 1:
+                            raise
+                    else:
+                        if progress_callback:
+                            progress_callback(f"批次 {batch_num} 发送失败: {error_str}", 0)
+                        raise
         
         return episode_uuids
     

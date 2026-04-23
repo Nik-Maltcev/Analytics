@@ -41,8 +41,8 @@ class Config:
     ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'markdown'}
     
     # 文本处理配置
-    DEFAULT_CHUNK_SIZE = 500  # 默认切块大小
-    DEFAULT_CHUNK_OVERLAP = 50  # 默认重叠大小
+    DEFAULT_CHUNK_SIZE = 5000  # Увеличено с 500 для снижения количества запросов к Zep
+    DEFAULT_CHUNK_OVERLAP = 200  # Увеличено пропорционально
     
     # OASIS模拟配置
     OASIS_DEFAULT_MAX_ROUNDS = int(os.environ.get('OASIS_DEFAULT_MAX_ROUNDS', '10'))
