@@ -40,15 +40,28 @@ class GraphBuilderService:
     """
     图谱构建服务
     负责调用Zep API构建知识图谱
+    Поддерживает ротацию ключей при исчерпании лимита.
     """
     
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
+        self._all_keys = Config.get_zep_keys() if not api_key else [api_key]
+        self._current_key_index = 0
+        
+        if not self._all_keys:
             raise ValueError("ZEP_API_KEY 未配置")
         
+        self.api_key = self._all_keys[0]
         self.client = Zep(api_key=self.api_key)
         self.task_manager = TaskManager()
+    
+    def _rotate_key(self) -> bool:
+        """Переключиться на следующий Zep ключ. Возвращает True если есть ещё ключи."""
+        self._current_key_index += 1
+        if self._current_key_index < len(self._all_keys):
+            self.api_key = self._all_keys[self._current_key_index]
+            self.client = Zep(api_key=self.api_key)
+            return True
+        return False
     
     def build_graph_async(
         self,
@@ -314,7 +327,7 @@ class GraphBuilderService:
                 for chunk in batch_chunks
             ]
             
-            # 发送到Zep (с retry при 429 rate limit)
+            # 发送到Zep (с retry при 429/403 + ротация ключей)
             max_retries = 5
             for attempt in range(max_retries):
                 try:
@@ -323,24 +336,38 @@ class GraphBuilderService:
                         episodes=episodes
                     )
                     
-                    # 收集返回的 episode uuid
                     if batch_result and isinstance(batch_result, list):
                         for ep in batch_result:
                             ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
                             if ep_uuid:
                                 episode_uuids.append(ep_uuid)
                     
-                    # Пауза между батчами для Zep free plan rate limit
                     time.sleep(3)
                     break
                     
                 except Exception as e:
                     error_str = str(e)
-                    if '429' in error_str or 'Rate limit' in error_str:
-                        wait_time = 15 * (attempt + 1)  # 15, 30, 45, 60, 75 сек
+                    
+                    # 403 — лимит исчерпан, пробуем следующий ключ
+                    if '403' in error_str or 'episode usage limit' in error_str:
+                        if self._rotate_key():
+                            if progress_callback:
+                                progress_callback(
+                                    f"Лимит Zep исчерпан, переключение на ключ #{self._current_key_index + 1}...",
+                                    (i + len(batch_chunks)) / total_chunks
+                                )
+                            # Нужно пересоздать граф на новом ключе
+                            graph_id = self.create_graph(f"MiroFish Graph (key {self._current_key_index + 1})")
+                            continue
+                        else:
+                            raise ValueError("Все Zep ключи исчерпаны. Создайте новые аккаунты.")
+                    
+                    # 429 — rate limit, ждём
+                    elif '429' in error_str or 'Rate limit' in error_str:
+                        wait_time = 15 * (attempt + 1)
                         if progress_callback:
                             progress_callback(
-                                f"Rate limit Zep, ожидание {wait_time}с... (попытка {attempt+1}/{max_retries})",
+                                f"Rate limit, ожидание {wait_time}с...",
                                 (i + len(batch_chunks)) / total_chunks
                             )
                         time.sleep(wait_time)
@@ -348,7 +375,7 @@ class GraphBuilderService:
                             raise
                     else:
                         if progress_callback:
-                            progress_callback(f"批次 {batch_num} 发送失败: {error_str}", 0)
+                            progress_callback(f"Ошибка: {error_str[:100]}", 0)
                         raise
         
         return episode_uuids

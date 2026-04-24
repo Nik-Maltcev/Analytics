@@ -32,8 +32,22 @@ class Config:
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'gpt-4o-mini')
     
-    # Zep配置
+    # Zep配置 (поддержка ротации ключей)
     ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
+    ZEP_API_KEY_2 = os.environ.get('ZEP_API_KEY_2', '')
+    ZEP_API_KEY_3 = os.environ.get('ZEP_API_KEY_3', '')
+    
+    @classmethod
+    def get_zep_keys(cls):
+        """Возвращает список всех доступных Zep ключей."""
+        keys = []
+        if cls.ZEP_API_KEY:
+            keys.append(cls.ZEP_API_KEY)
+        if cls.ZEP_API_KEY_2:
+            keys.append(cls.ZEP_API_KEY_2)
+        if cls.ZEP_API_KEY_3:
+            keys.append(cls.ZEP_API_KEY_3)
+        return keys
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
