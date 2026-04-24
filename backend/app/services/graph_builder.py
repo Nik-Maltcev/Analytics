@@ -128,46 +128,23 @@ class GraphBuilderService:
                 message="本体已设置"
             )
             
-            # 3. Отправляем весь текст как 1 эпизод (экономия лимита Zep)
+            # 3. Разбиваем на чанки по 10000 символов (лимит Zep на эпизод)
+            chunks = TextProcessor.split_text(text, 10000, 500)
+            total_chunks = len(chunks)
             self.task_manager.update_task(
                 task_id,
                 progress=20,
-                message=f"Отправка данных в Zep ({len(text)} символов)..."
+                message=f"Отправка {total_chunks} эпизодов в Zep..."
             )
             
-            episode_uuids = []
-            max_retries = 5
-            for attempt in range(max_retries):
-                try:
-                    batch_result = self.client.graph.add_batch(
-                        graph_id=graph_id,
-                        episodes=[EpisodeData(data=text, type="text")]
-                    )
-                    if batch_result and isinstance(batch_result, list):
-                        for ep in batch_result:
-                            ep_uuid = getattr(ep, 'uuid_', None) or getattr(ep, 'uuid', None)
-                            if ep_uuid:
-                                episode_uuids.append(ep_uuid)
-                    break
-                except Exception as e:
-                    error_str = str(e)
-                    if '429' in error_str or 'Rate limit' in error_str:
-                        wait_time = 15 * (attempt + 1)
-                        self.task_manager.update_task(
-                            task_id, progress=25,
-                            message=f"Rate limit, ожидание {wait_time}с..."
-                        )
-                        time.sleep(wait_time)
-                        if attempt == max_retries - 1:
-                            raise
-                    else:
-                        raise
-            
-            total_chunks = 1
-            self.task_manager.update_task(
-                task_id,
-                progress=40,
-                message="Данные отправлены, ожидание обработки Zep..."
+            # 4. Отправляем батчами по 20 (лимит Zep)
+            episode_uuids = self.add_text_batches(
+                graph_id, chunks, 20,
+                lambda msg, prog: self.task_manager.update_task(
+                    task_id,
+                    progress=20 + int(prog * 0.4),
+                    message=msg
+                )
             )
             
             # 5. 等待Zep处理完成
