@@ -779,14 +779,20 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
 
         # ═══ Форматируем ═══
         from ..services.pikabu_formatter import PikabuFormatter
+        from ..services.market_summarizer import summarize_market_data
 
         stats = PikabuFormatter.estimate_multi_source_size(topics_data)
         logger.info(f"Multi-source data: {stats}")
 
-        document_text = PikabuFormatter.format_multi_source(
+        raw_text = PikabuFormatter.format_multi_source(
             topics_data=topics_data,
             brief=brief,
         )
+
+        # ═══ Суммаризация через LLM (сжимаем перед Zep) ═══
+        logger.info(f"Raw text: {len(raw_text)} chars. Starting LLM summarization...")
+        document_text = summarize_market_data(raw_text, brief=brief)
+        logger.info(f"Summarized: {len(raw_text)} → {len(document_text)} chars")
 
         # Обновляем проект
         project = ProjectManager.get_project(project_id)
