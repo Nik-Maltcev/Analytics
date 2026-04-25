@@ -340,7 +340,7 @@ def generate_ontology_from_prompt():
                 import time
                 time.sleep(2)
         else:
-            raise last_error
+            raise last_error or Exception("Ontology generation failed after 3 attempts")
         
         entity_count = len(ontology.get("entity_types", []))
         edge_count = len(ontology.get("edge_types", []))
@@ -496,7 +496,7 @@ def generate_ontology_from_pikabu():
                 import time
                 time.sleep(2)
         else:
-            raise last_error
+            raise last_error or Exception("Ontology generation failed after 3 attempts")
 
         entity_count = len(ontology.get("entity_types", []))
         edge_count = len(ontology.get("edge_types", []))
@@ -796,6 +796,9 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
 
         # Обновляем проект
         project = ProjectManager.get_project(project_id)
+        if not project:
+            logger.error(f"Project {project_id} not found after data loading")
+            return
         project.files.append({
             "filename": "market_research_data.md",
             "size": len(document_text.encode('utf-8'))
