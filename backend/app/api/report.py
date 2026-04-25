@@ -132,15 +132,24 @@ def generate_report():
                 )
                 
                 # 创建Report Agent
-                # Автоопределение режима: если в тексте проекта есть теги [source:], это market_research
+                # Автоопределение режима: market_research если проект создан из маркетингового исследования
                 effective_mode = report_mode
                 if effective_mode == 'auto':
                     try:
-                        extracted = ProjectManager.get_extracted_text(project.project_id)
-                        if extracted and '[source:' in extracted[:5000]:
+                        # Проверяем по файлам проекта (market research создаёт market_research_data.md)
+                        is_market = any(
+                            f.get("filename", "").startswith("market_research")
+                            for f in (project.files or [])
+                        )
+                        if is_market:
                             effective_mode = 'market_research'
                         else:
-                            effective_mode = 'social'
+                            # Fallback: проверяем теги [source:] в тексте
+                            extracted = ProjectManager.get_extracted_text(project.project_id)
+                            if extracted and '[source:' in extracted[:5000]:
+                                effective_mode = 'market_research'
+                            else:
+                                effective_mode = 'social'
                     except Exception:
                         effective_mode = 'social'
                 
