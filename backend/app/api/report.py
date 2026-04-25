@@ -133,21 +133,22 @@ def generate_report():
                 
                 # 创建Report Agent
                 # Автоопределение режима: если в тексте проекта есть теги [source:], это market_research
-                if report_mode == 'auto':
+                effective_mode = report_mode
+                if effective_mode == 'auto':
                     try:
                         extracted = ProjectManager.get_extracted_text(project.project_id)
                         if extracted and '[source:' in extracted[:5000]:
-                            report_mode = 'market_research'
+                            effective_mode = 'market_research'
                         else:
-                            report_mode = 'social'
+                            effective_mode = 'social'
                     except Exception:
-                        report_mode = 'social'
+                        effective_mode = 'social'
                 
                 agent = ReportAgent(
                     graph_id=graph_id,
                     simulation_id=simulation_id,
                     simulation_requirement=simulation_requirement,
-                    mode=report_mode
+                    mode=effective_mode
                 )
                 
                 # 进度回调
