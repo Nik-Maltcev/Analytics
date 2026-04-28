@@ -15,21 +15,21 @@
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
-            <span class="orange-tag">Универсальный движок коллективного интеллекта</span>
+            <span class="orange-tag">AI-платформа маркетинговых исследований</span>
             <span class="version-text">/ v0.1-превью</span>
           </div>
           
           <h1 class="main-title">
-            Загрузите любой отчёт<br>
-            <span class="gradient-text">Смоделируйте будущее</span>
+            Исследуйте рынок<br>
+            <span class="gradient-text">Найдите точку роста</span>
           </h1>
           
           <div class="hero-desc">
             <p>
-              Даже из одного абзаца текста <span class="highlight-bold">MiroFish</span> извлечёт реальные зёрна и автоматически создаст параллельный мир из до <span class="highlight-orange">миллиона агентов</span>. Внедряйте переменные с позиции наблюдателя и находите <span class="highlight-code">«локальный оптимум»</span> в сложных групповых взаимодействиях
+              <span class="highlight-bold">MiroFish</span> автоматически собирает данные с форумов, строит граф знаний и запускает <span class="highlight-orange">мультиагентную симуляцию</span> рынка. Получите глубокий анализ конкурентов, аудитории и трендов за <span class="highlight-code">минуты, а не недели</span>
             </p>
             <p class="slogan-text">
-              Пусть будущее разыграется среди агентов, а решения победят после сотен битв<span class="blinking-cursor">_</span>
+              От сырых данных к стратегическим решениям — автоматически<span class="blinking-cursor">_</span>
             </p>
           </div>
            
@@ -58,18 +58,18 @@
           
           <h2 class="section-title">Готов к работе</h2>
           <p class="section-desc">
-            Движок прогнозирования в режиме ожидания. Загрузите неструктурированные данные для инициализации симуляции
+            Выберите темы из Pikabu, Habr или VC.ru — система автоматически соберёт данные, построит граф знаний и проведёт мультиагентный анализ рынка
           </p>
           
           <!-- Metrics Cards -->
           <div class="metrics-row">
             <div class="metric-card">
-              <div class="metric-value">Низкая цена</div>
-              <div class="metric-label">В среднем ~5$ за симуляцию</div>
+              <div class="metric-value">~5$</div>
+              <div class="metric-label">Стоимость одного исследования</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value">Масштаб</div>
-              <div class="metric-label">До миллиона агентов</div>
+              <div class="metric-value">3 источника</div>
+              <div class="metric-label">Pikabu · Habr · VC.ru</div>
             </div>
           </div>
 
@@ -82,36 +82,36 @@
               <div class="workflow-item">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                  <div class="step-title">Построение графа</div>
-                  <div class="step-desc">Извлечение реальных зёрен & внедрение памяти & построение GraphRAG</div>
+                  <div class="step-title">Сбор данных</div>
+                  <div class="step-desc">Автопарсинг форумов & AI-суммаризация & построение графа знаний</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                  <div class="step-title">Настройка среды</div>
-                  <div class="step-desc">Извлечение сущностей & генерация профилей & настройка параметров агентов</div>
+                  <div class="step-title">Настройка агентов</div>
+                  <div class="step-desc">Извлечение сущностей рынка & генерация профилей & настройка ролей</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">03</span>
                 <div class="step-info">
-                  <div class="step-title">Запуск симуляции</div>
-                  <div class="step-desc">Параллельная симуляция на двух платформах & динамическое обновление памяти</div>
+                  <div class="step-title">Симуляция рынка</div>
+                  <div class="step-desc">Агенты обсуждают продукт на двух платформах & динамическое обновление</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">04</span>
                 <div class="step-info">
-                  <div class="step-title">Генерация отчёта</div>
-                  <div class="step-desc">ReportAgent с набором инструментов для глубокого анализа результатов</div>
+                  <div class="step-title">Аналитический отчёт</div>
+                  <div class="step-desc">ReportAgent анализирует результаты & конкуренты & аудитория & тренды</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
                   <div class="step-title">Глубокое взаимодействие</div>
-                  <div class="step-desc">Диалог с любым агентом мира & общение с ReportAgent</div>
+                  <div class="step-desc">Задавайте вопросы агентам & уточняйте инсайты через диалог</div>
                 </div>
               </div>
             </div>
@@ -136,7 +136,7 @@
                   :class="{ active: workMode === 'prediction' }"
                   @click="workMode = 'prediction'"
                 >
-                  🔮 Прогнозирование
+                  � Свой документ
                 </button>
               </div>
             </div>
