@@ -539,11 +539,10 @@ def generate_ontology_from_pikabu():
 @graph_bp.route('/topics/external', methods=['GET'])
 def get_external_topics():
     """
-    Проксирует список тем из Topic Analyzer API.
-    Фронтенд вызывает этот эндпоинт вместо прямого обращения к Topic Analyzer.
+    Проксирует единый список категорий из Topic Analyzer API.
+    Все платформы объединены — фронтенд показывает общий список.
 
     Query параметры:
-        source: pikabu | habr | vcru | all (по умолчанию all)
         search: фильтр по имени (опционально)
 
     Returns:
@@ -560,11 +559,10 @@ def get_external_topics():
     import requests
 
     try:
-        source = request.args.get('source', 'all')
         search = request.args.get('search', '')
 
         api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
-        params = {"source": source}
+        params = {}
         if search:
             params["search"] = search
 
@@ -575,19 +573,10 @@ def get_external_topics():
         data = resp.json()
         topics = data.get("topics", [])
 
-        # Группируем по источнику для удобства фронтенда
-        grouped = {}
-        for t in topics:
-            src = t.get("source", "pikabu")
-            if src not in grouped:
-                grouped[src] = []
-            grouped[src].append(t)
-
         return jsonify({
             "success": True,
             "data": {
                 "topics": topics,
-                "grouped": grouped,
                 "total": len(topics),
             }
         })
@@ -700,7 +689,7 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
         # ═══ Получаем инфо о темах ═══
         topics_info = {}
         try:
-            topics_resp = requests.get(f"{api_url}/api/topics", params={"source": "all"}, timeout=15)
+            topics_resp = requests.get(f"{api_url}/api/topics", timeout=15)
             if topics_resp.status_code == 200:
                 for t in topics_resp.json().get("topics", []):
                     topics_info[t["id"]] = t
@@ -711,19 +700,18 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
         def _parse_single_topic(topic_id):
             """Парсит одну тему и ждёт завершения."""
             t_info = topics_info.get(topic_id, {})
-            t_source = t_info.get("source", "pikabu")
-            logger.info(f"Auto-parsing: topic {topic_id} ({t_info.get('name', '?')}) [{t_source}]...")
+            logger.info(f"Auto-parsing: topic {topic_id} ({t_info.get('name', '?')})...")
 
             try:
                 parse_resp = requests.post(
                     f"{api_url}/api/parse/start",
-                    params={"topic_id": topic_id, "days": days, "source": t_source},
+                    params={"topic_id": topic_id, "days": days},
                     timeout=15,
                 )
                 if parse_resp.status_code == 200:
                     task_id = parse_resp.json().get("task_id")
                     if task_id:
-                        logger.info(f"  [{t_source}] Parse started: task_id={task_id}")
+                        logger.info(f"  Parse started: task_id={task_id}")
                         for _ in range(180):  # 180 × 5s = 15 мин макс
                             _time.sleep(5)
                             try:
@@ -731,7 +719,7 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
                                 if sr.status_code == 200:
                                     sd = sr.json()
                                     st = sd.get("status", "")
-                                    logger.info(f"  [{t_source}] {st} {sd.get('progress_percent', 0)}%")
+                                    logger.info(f"  {st} {sd.get('progress_percent', 0)}%")
                                     if st in ("completed", "failed"):
                                         return
                                 else:
@@ -739,7 +727,7 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
                             except Exception:
                                 return
                 elif parse_resp.status_code == 409:
-                    logger.info(f"  [{t_source}] Parse already running, waiting 30s...")
+                    logger.info(f"  Parse already running, waiting 30s...")
                     _time.sleep(30)
             except Exception as e:
                 logger.warning(f"  Auto-parse failed for topic {topic_id}: {e}")

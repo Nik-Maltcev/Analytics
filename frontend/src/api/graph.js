@@ -83,16 +83,15 @@ export function getProject(projectId) {
 }
 
 /**
- * Получить список тем из Topic Analyzer (для маркетинговых исследований)
- * @param {String} source - Фильтр: pikabu | habr | vcru | all
+ * Получить список категорий из Topic Analyzer (для маркетинговых исследований)
  * @param {String} search - Поиск по имени
  * @returns {Promise}
  */
-export function getExternalTopics(source = 'all', search = '') {
+export function getExternalTopics(search = '') {
   return service({
     url: '/api/graph/topics/external',
     method: 'get',
-    params: { source, search }
+    params: { search }
   })
 }
 

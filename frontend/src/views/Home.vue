@@ -54,7 +54,7 @@
           
           <h2 class="section-title">Готов к работе</h2>
           <p class="section-desc">
-            Выберите темы из Pikabu, Habr или VC.ru — система автоматически соберёт данные, построит граф знаний и проведёт мультиагентный анализ рынка
+            Выберите категории — система автоматически соберёт данные со всех платформ, построит граф знаний и проведёт мультиагентный анализ рынка
           </p>
           
           <!-- Metrics Cards -->
@@ -65,7 +65,7 @@
             </div>
             <div class="metric-card">
               <div class="metric-value">3 источника</div>
-              <div class="metric-label">Pikabu · Habr · VC.ru</div>
+              <div class="metric-label">Данные со всех платформ</div>
             </div>
           </div>
 
@@ -147,27 +147,24 @@
                 </div>
                 
                 <div v-if="topicsLoading" class="topics-loading">
-                  Загрузка тем из Topic Analyzer...
+                  Загрузка категорий...
                 </div>
                 <div v-else-if="topicsError" class="topics-error">
                   {{ topicsError }}
                   <button class="retry-btn" @click="loadExternalTopics">Повторить</button>
                 </div>
                 <div v-else class="topics-selector">
-                  <div v-for="(topics, source) in groupedTopics" :key="source" class="source-group">
-                    <div class="source-header">{{ sourceLabels[source] || source }}</div>
-                    <div class="topics-grid">
-                      <button
-                        v-for="topic in topics"
-                        :key="topic.id"
-                        class="topic-chip"
-                        :class="{ selected: isTopicSelected(topic.id), disabled: !isTopicSelected(topic.id) && selectedTopicIds.length >= 5 }"
-                        @click="toggleTopic(topic.id)"
-                        :disabled="!isTopicSelected(topic.id) && selectedTopicIds.length >= 5"
-                      >
-                        {{ topic.name }}
-                      </button>
-                    </div>
+                  <div class="topics-grid">
+                    <button
+                      v-for="topic in externalTopics"
+                      :key="topic.id"
+                      class="topic-chip"
+                      :class="{ selected: isTopicSelected(topic.id), disabled: !isTopicSelected(topic.id) && selectedTopicIds.length >= 5 }"
+                      @click="toggleTopic(topic.id)"
+                      :disabled="!isTopicSelected(topic.id) && selectedTopicIds.length >= 5"
+                    >
+                      {{ topic.name }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -305,24 +302,22 @@ const router = useRouter()
 const workMode = ref('market_research') // 'market_research' | 'prediction'
 
 // ═══ Market Research: темы из Topic Analyzer ═══
-const externalTopics = ref([])       // Все темы
-const groupedTopics = ref({})        // Сгруппированные по источнику
+const externalTopics = ref([])       // Все категории (единый список)
 const selectedTopicIds = ref([])     // Выбранные topic_id
 const days = ref(30)                 // Период: 7 | 14 | 30
 const topicsLoading = ref(false)
 const topicsError = ref('')
 
-// Загрузка тем из Topic Analyzer
+// Загрузка категорий из Topic Analyzer
 const loadExternalTopics = async () => {
   topicsLoading.value = true
   topicsError.value = ''
   try {
-    const response = await getExternalTopics('all')
+    const response = await getExternalTopics()
     if (response.success) {
       externalTopics.value = response.data.topics || []
-      groupedTopics.value = response.data.grouped || {}
     } else {
-      topicsError.value = response.error || 'Ошибка загрузки тем'
+      topicsError.value = response.error || 'Ошибка загрузки категорий'
     }
   } catch (err) {
     topicsError.value = 'Topic Analyzer недоступен. Проверьте подключение.'
@@ -342,9 +337,6 @@ const toggleTopic = (topicId) => {
 }
 
 const isTopicSelected = (topicId) => selectedTopicIds.value.includes(topicId)
-
-// Человекочитаемые названия источников
-const sourceLabels = { pikabu: 'Pikabu', habr: 'Habr', vcru: 'VC.ru' }
 
 // ═══ Prediction mode (существующий) ═══
 const formData = ref({ simulationRequirement: '' })
@@ -1143,15 +1135,6 @@ const startSimulation = async () => {
   color: #ccc;
   cursor: pointer;
   font-size: 12px;
-}
-.source-group { margin-bottom: 12px; }
-.source-header {
-  font-size: 11px;
-  color: #FF6B35;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 6px;
-  padding-left: 2px;
 }
 .topics-grid {
   display: flex;
