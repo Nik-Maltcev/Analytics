@@ -127,13 +127,6 @@
                 >
                   📊 Маркетинговое исследование
                 </button>
-                <button 
-                  class="mode-btn" 
-                  :class="{ active: workMode === 'prediction' }"
-                  @click="workMode = 'prediction'"
-                >
-                  � Свой документ
-                </button>
               </div>
             </div>
 
