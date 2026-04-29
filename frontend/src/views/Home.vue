@@ -4,9 +4,6 @@
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          Наш Github <span class="arrow">↗</span>
-        </a>
       </div>
     </nav>
 
@@ -16,7 +13,6 @@
         <div class="hero-left">
           <div class="tag-row">
             <span class="orange-tag">AI-платформа маркетинговых исследований</span>
-            <span class="version-text">/ v0.1-превью</span>
           </div>
           
           <h1 class="main-title">
@@ -130,13 +126,6 @@
                   @click="workMode = 'market_research'"
                 >
                   📊 Маркетинговое исследование
-                </button>
-                <button 
-                  class="mode-btn" 
-                  :class="{ active: workMode === 'prediction' }"
-                  @click="workMode = 'prediction'"
-                >
-                  � Свой документ
                 </button>
               </div>
             </div>
