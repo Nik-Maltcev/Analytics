@@ -176,23 +176,3 @@ onMounted(() => {
   loadTopics()
 })
 </script>
-
-<style scoped>
-h1, h2, h3, p, ul, li, label {
-  margin: 0;
-  padding: 0;
-}
-ul {
-  list-style: none;
-}
-a {
-  text-decoration: none;
-  color: inherit;
-}
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
-</style>

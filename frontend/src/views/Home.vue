@@ -159,28 +159,3 @@ function goToResearch() {
   router.push({ name: 'Research' })
 }
 </script>
-
-<style scoped>
-/* Reset browser defaults for this page since Tailwind preflight is disabled */
-h1, h2, h3, p, ul, li {
-  margin: 0;
-  padding: 0;
-}
-ul {
-  list-style: none;
-}
-a {
-  text-decoration: none;
-  color: inherit;
-}
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
-img {
-  display: block;
-  max-width: 100%;
-}
-</style>
