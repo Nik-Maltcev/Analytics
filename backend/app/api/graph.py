@@ -782,6 +782,12 @@ def _market_research_background(project_id: str, topic_ids: list, brief: str, da
         document_text = summarize_market_data(raw_text, brief=brief)
         logger.info(f"Summarized: {len(raw_text)} → {len(document_text)} chars")
 
+        # ═══ Обогащение данными из веб-поиска ═══
+        from ..services.web_researcher import enrich_with_web_research
+        logger.info("Starting web research enrichment...")
+        document_text = enrich_with_web_research(document_text, brief=brief)
+        logger.info(f"After web enrichment: {len(document_text)} chars")
+
         # Обновляем проект
         project = ProjectManager.get_project(project_id)
         if not project:
