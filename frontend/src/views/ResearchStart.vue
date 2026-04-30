@@ -136,13 +136,22 @@
       <div class="flex items-center gap-4">
         <span class="text-sm font-bold text-[#1b1b1d]">Период:</span>
         <button
-          v-for="d in [7, 14, 30]"
-          :key="d"
           type="button"
           class="px-5 py-2 border rounded-lg text-sm font-medium transition-all"
-          :class="days === d ? 'bg-black text-white border-black' : 'bg-[#fbf9fb] text-[#1b1b1d] border-[#c5c6cd] hover:border-black'"
-          @click="days = d"
-        >{{ d }} дней</button>
+          :class="days === 14 ? 'bg-black text-white border-black' : 'bg-[#fbf9fb] text-[#1b1b1d] border-[#c5c6cd] hover:border-black'"
+          @click="days = 14"
+        >14 дней</button>
+        <button
+          type="button"
+          class="px-5 py-2 border rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+          :class="days === 30 ? 'bg-black text-white border-black' : 'bg-[#fbf9fb] text-[#1b1b1d] border-[#c5c6cd] hover:border-black'"
+          @click="days = 30"
+        >
+          30 дней
+          <span class="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+            :class="days === 30 ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'"
+          >рек.</span>
+        </button>
       </div>
 
       <!-- Error -->
@@ -194,7 +203,7 @@ const brief = ref('')
 const allTopics = ref([])
 const selectedTopicIds = ref([])
 const searchQuery = ref('')
-const days = ref(30)
+const days = ref(14)
 const loading = ref(false)
 const error = ref('')
 const showAllCategories = ref(false)
