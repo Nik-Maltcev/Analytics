@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[#fbf9fb] text-[#1b1b1d] min-h-screen flex flex-col font-['Inter'] antialiased pt-16">
+  <div class="tw-page bg-[#fbf9fb] text-[#1b1b1d] min-h-screen flex flex-col font-['Inter'] antialiased pt-16">
     <!-- Navbar -->
     <nav class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 h-16 max-w-7xl mx-auto bg-white border-b border-slate-200 shadow-sm right-0">
       <div class="text-xl font-bold text-slate-900 tracking-tight">InsightArch</div>
@@ -152,15 +152,10 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { onMounted, onUnmounted } from 'vue'
-import { loadTailwind, unloadTailwind } from '../utils/tailwind-loader'
 
 const router = useRouter()
 
 function goToResearch() {
   router.push({ name: 'Research' })
 }
-
-onMounted(() => loadTailwind())
-onUnmounted(() => unloadTailwind())
 </script>

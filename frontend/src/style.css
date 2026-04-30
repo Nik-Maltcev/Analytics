@@ -10,3 +10,51 @@ body {
 .icon-fill {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+/* Scoped reset for Tailwind-based pages */
+.tw-page,
+.tw-page * {
+  box-sizing: border-box;
+}
+.tw-page h1,
+.tw-page h2,
+.tw-page h3,
+.tw-page h4,
+.tw-page p,
+.tw-page ul,
+.tw-page ol,
+.tw-page li,
+.tw-page figure,
+.tw-page blockquote,
+.tw-page dl,
+.tw-page dd {
+  margin: 0;
+  padding: 0;
+}
+.tw-page ul,
+.tw-page ol {
+  list-style: none;
+}
+.tw-page a {
+  text-decoration: none;
+  color: inherit;
+}
+.tw-page button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  padding: 0;
+}
+.tw-page img {
+  display: block;
+  max-width: 100%;
+}
+.tw-page textarea,
+.tw-page input,
+.tw-page select {
+  font-family: inherit;
+  font-size: inherit;
+}

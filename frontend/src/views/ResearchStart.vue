@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-[#fbf9fb] text-[#1b1b1d] min-h-screen flex flex-col font-['Inter'] antialiased pt-16">
+  <div class="tw-page bg-[#fbf9fb] text-[#1b1b1d] min-h-screen flex flex-col font-['Inter'] antialiased pt-16">
     <!-- Navbar -->
     <nav class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 h-16 max-w-7xl mx-auto bg-white border-b border-slate-200 shadow-sm right-0">
       <div class="flex items-center gap-8">
@@ -192,10 +192,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateMarketResearch, getExternalTopics } from '../api/graph'
-import { loadTailwind, unloadTailwind } from '../utils/tailwind-loader'
 
 const router = useRouter()
 
@@ -304,9 +303,6 @@ async function onSubmit() {
 }
 
 onMounted(() => {
-  loadTailwind()
   loadTopics()
 })
-
-onUnmounted(() => unloadTailwind())
 </script>
