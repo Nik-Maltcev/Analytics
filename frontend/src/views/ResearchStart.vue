@@ -121,9 +121,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateMarketResearch, getExternalTopics } from '../api/graph'
+import { loadTailwind, unloadTailwind } from '../utils/tailwind-loader'
 
 const router = useRouter()
 
@@ -173,6 +174,9 @@ async function onSubmit() {
 }
 
 onMounted(() => {
+  loadTailwind()
   loadTopics()
 })
+
+onUnmounted(() => unloadTailwind())
 </script>

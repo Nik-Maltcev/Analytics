@@ -152,10 +152,15 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
+import { onMounted, onUnmounted } from 'vue'
+import { loadTailwind, unloadTailwind } from '../utils/tailwind-loader'
 
 const router = useRouter()
 
 function goToResearch() {
   router.push({ name: 'Research' })
 }
+
+onMounted(() => loadTailwind())
+onUnmounted(() => unloadTailwind())
 </script>
