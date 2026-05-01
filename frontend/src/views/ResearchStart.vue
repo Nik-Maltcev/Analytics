@@ -181,8 +181,8 @@
     <footer class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 border-t border-slate-200">
       <span class="text-lg font-black text-slate-900">InsightArch</span>
       <div class="flex flex-wrap justify-center gap-4">
-        <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Условия</a>
-        <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Конфиденциальность</a>
+        <router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/terms">Условия</router-link>
+        <router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/privacy">Конфиденциальность</router-link>
         <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Методология</a>
         <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Поддержка</a>
       </div>

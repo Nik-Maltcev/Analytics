@@ -141,8 +141,8 @@
       <div class="text-lg font-black text-slate-900">InsightArch</div>
       <p class="text-xs text-slate-500">© 2025 InsightArch Analytics. Точность в рыночной разведке.</p>
       <ul class="flex flex-wrap gap-4 items-center justify-center">
-        <li><a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Условия использования</a></li>
-        <li><a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Политика конфиденциальности</a></li>
+        <li><router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/terms">Условия использования</router-link></li>
+        <li><router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/privacy">Политика конфиденциальности</router-link></li>
         <li><a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Методология</a></li>
         <li><a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Поддержка</a></li>
       </ul>

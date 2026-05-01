@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import ResearchStart from '../views/ResearchStart.vue'
+import Privacy from '../views/Privacy.vue'
+import Terms from '../views/Terms.vue'
 import Process from '../views/MainView.vue'
 import SimulationView from '../views/SimulationView.vue'
 import SimulationRunView from '../views/SimulationRunView.vue'
@@ -17,6 +19,16 @@ const routes = [
     path: '/research',
     name: 'Research',
     component: ResearchStart
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: Privacy
+  },
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: Terms
   },
   {
     path: '/process/:projectId',
