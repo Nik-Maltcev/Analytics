@@ -83,21 +83,24 @@ export function getProject(projectId) {
 }
 
 /**
- * Получить список категорий из Topic Analyzer (для маркетинговых исследований)
- * @param {String} search - Поиск по имени
+ * Get available data sources. If brief is provided, AI selects relevant ones.
+ * @param {Object} params - { brief?: string, search?: string }
  * @returns {Promise}
  */
-export function getExternalTopics(search = '') {
+export function getExternalTopics(params = {}) {
   return service({
     url: '/api/graph/topics/external',
     method: 'get',
-    params: { search }
+    params: {
+      brief: params.brief || '',
+      search: params.search || '',
+    }
   })
 }
 
 /**
- * Запустить маркетинговое исследование (мультиселект тем)
- * @param {Object} data - { topic_ids: [1,5,12], brief: "...", project_name: "..." }
+ * Launch market research (multi-source)
+ * @param {Object} data - { source_ids: [...], brief: "...", days: 30, project_name: "..." }
  * @returns {Promise}
  */
 export function generateMarketResearch(data) {
@@ -106,7 +109,7 @@ export function generateMarketResearch(data) {
       url: '/api/graph/ontology/generate-from-market-research',
       method: 'post',
       data,
-      timeout: 1800000 // 30 минут — парсинг + генерация онтологии
+      timeout: 1800000 // 30 min — parsing + ontology generation
     })
-  , 1) // Без retry — долгий запрос
+  , 1) // No retry — long request
 }

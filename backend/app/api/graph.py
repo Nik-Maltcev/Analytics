@@ -539,55 +539,54 @@ def generate_ontology_from_pikabu():
 @graph_bp.route('/topics/external', methods=['GET'])
 def get_external_topics():
     """
-    Проксирует единый список категорий из Topic Analyzer API.
-    Все платформы объединены — фронтенд показывает общий список.
+    Returns available data sources from the local catalog.
+    If 'brief' query param is provided, uses AI to recommend relevant sources.
 
-    Query параметры:
-        search: фильтр по имени (опционально)
+    Query params:
+        brief: client research brief (optional) — triggers AI selection
+        search: filter by name (optional)
 
     Returns:
         {
             "success": true,
             "data": {
-                "topics": [
-                    {"id": 1, "name": "Финтех", "source": "vcru", "url": "..."},
-                    ...
-                ]
+                "sources": [...],
+                "recommended_ids": [...],
+                "reasoning": "..."
             }
         }
     """
-    import requests
-
     try:
-        search = request.args.get('search', '')
+        brief = request.args.get('brief', '').strip()
+        search = request.args.get('search', '').strip()
 
-        api_url = Config.TOPIC_ANALYZER_API_URL.rstrip('/')
-        params = {}
+        from ..services.source_selector import SourceSelector
+
+        selector = SourceSelector()
+
+        if brief:
+            # AI-powered selection (synchronous)
+            logger.info(f"AI source selection for brief: {brief[:80]}...")
+            result = selector.select_sources(brief)
+        else:
+            # Just return all sources
+            result = selector.get_all_sources()
+
+        # Apply search filter if provided
         if search:
-            params["search"] = search
-
-        logger.info(f"Fetching topics from Topic Analyzer: {api_url}/api/topics")
-        resp = requests.get(f"{api_url}/api/topics", params=params, timeout=15)
-        resp.raise_for_status()
-
-        data = resp.json()
-        topics = data.get("topics", [])
+            q = search.lower()
+            result['sources'] = [
+                s for s in result['sources']
+                if q in s.get('name', '').lower() or q in ' '.join(s.get('topics', [])).lower()
+            ]
 
         return jsonify({
             "success": True,
-            "data": {
-                "topics": topics,
-                "total": len(topics),
-            }
+            "data": result
         })
 
-    except requests.ConnectionError:
-        return jsonify({
-            "success": False,
-            "error": f"Не удалось подключиться к Topic Analyzer: {Config.TOPIC_ANALYZER_API_URL}"
-        }), 502
     except Exception as e:
-        logger.error(f"Failed to fetch external topics: {str(e)}")
+        logger.error(f"Failed to get sources: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)
