@@ -6,7 +6,7 @@
 
     <main class="flex-grow pt-24 pb-16 px-8 max-w-3xl mx-auto w-full">
       <h1 class="text-3xl font-bold mb-8">Политика конфиденциальности</h1>
-      <p class="text-sm text-slate-500 mb-8">Дата вступления в силу: 1 мая 2025 г.</p>
+      <p class="text-sm text-slate-500 mb-8">Дата вступления в силу: 1 мая 2026 г.</p>
 
       <div class="space-y-6 text-base leading-relaxed text-[#44474d]">
         <section>
