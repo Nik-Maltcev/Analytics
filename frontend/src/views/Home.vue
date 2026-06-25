@@ -52,7 +52,7 @@
       <div class="max-w-7xl mx-auto px-8">
         <div class="text-center mb-16">
           <h2 class="text-3xl font-semibold tracking-tight text-[#1b1b1d] mb-2">Institutional rigor, accelerated</h2>
-          <p class="text-base text-[#44474d] max-w-2xl mx-auto">Our proprietary AI pipeline transforms fragmented global data into coherent, validated intelligence streams.</p>
+          <p class="text-base text-[#44474d] max-w-2xl mx-auto text-center">Our proprietary AI pipeline transforms fragmented global data into coherent, validated intelligence streams.</p>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div class="bg-white border border-[#c5c6cd] rounded-xl p-8 flex flex-col gap-4 shadow-[0px_2px_8px_rgba(10,25,47,0.02)] hover:shadow-[0px_8px_24px_rgba(10,25,47,0.06)] transition-shadow">
@@ -84,7 +84,7 @@
     <section class="max-w-7xl mx-auto px-8 py-16">
       <div class="text-center mb-16">
         <h2 class="text-3xl font-semibold tracking-tight text-[#1b1b1d] mb-2">Choose your plan</h2>
-        <p class="text-base text-[#44474d] max-w-2xl mx-auto">Institutional-grade market intelligence at a fraction of the cost. Pick the depth that fits your needs.</p>
+        <p class="text-base text-[#44474d] max-w-2xl mx-auto text-center">Institutional-grade market intelligence at a fraction of the cost. Pick the depth that fits your needs.</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         <!-- Plan 1: Market Research $290 -->
@@ -170,7 +170,7 @@
     <!-- Footer -->
     <footer class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50 border-t border-slate-200">
       <div class="text-lg font-black text-slate-900">InsightArch</div>
-      <p class="text-xs text-slate-500">© 2025 InsightArch Analytics. Precision in market intelligence.</p>
+      <p class="text-xs text-slate-500">© 2026 InsightArch Analytics. Precision in market intelligence.</p>
       <ul class="flex flex-wrap gap-4 items-center justify-center">
         <li><router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/terms">Terms of Service</router-link></li>
         <li><router-link class="text-xs text-slate-500 hover:text-blue-600 transition-colors" to="/privacy">Privacy Policy</router-link></li>

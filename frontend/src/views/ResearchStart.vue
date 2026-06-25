@@ -245,7 +245,7 @@
         <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Methodology</a>
         <a class="text-xs text-slate-500 hover:text-blue-600 transition-colors" href="#">Support</a>
       </div>
-      <p class="text-xs text-slate-500">© 2025 InsightArch Analytics.</p>
+      <p class="text-xs text-slate-500">© 2026 InsightArch Analytics.</p>
     </footer>
   </div>
 </template>

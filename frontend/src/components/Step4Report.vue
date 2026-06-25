@@ -9,7 +9,7 @@
           <div class="report-header-block">
             <div class="report-meta">
               <span class="report-tag">Prediction Report</span>
-              <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
+              <span class="report-id">ID: {{ reportId || 'REF-2026-X92' }}</span>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
             <p class="sub-title">{{ reportOutline.summary }}</p>
